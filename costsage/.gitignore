@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .env
 src/.env
+.env
+backend/node_modules

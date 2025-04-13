@@ -118,8 +118,12 @@ const Dashboard = () => {
 
   const goToExpenseTracker = (featureName: string) => {
     setPageLoading(true);
-    const formattedFeature = featureName.toLowerCase().replace(/\s+/g, "-");
-    navigate(`/expense/${formattedFeature}`);
+    if (featureName === "Cost Analysis Chatbot") {
+      navigate("/chat");
+    } else {
+      const formattedFeature = featureName.toLowerCase().replace(/\s+/g, "-");
+      navigate(`/expense/${formattedFeature}`);
+    }
   };
 
   const handleLogout = async () => {

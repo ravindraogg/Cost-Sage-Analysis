@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import './chatbot.css';
 import axios from 'axios';
 
-// Set the backend URL to localhost:5000
 axios.defaults.baseURL = 'https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net';
 
 const CostSageChatbot: React.FC = () => {
@@ -13,11 +12,23 @@ const CostSageChatbot: React.FC = () => {
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<{ id: string; title: string; date: string }>>([]);
+  const [isFirstPrompt, setIsFirstPrompt] = useState(true);
+  const [iconPlayed, setIconPlayed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const userEmail = localStorage.getItem('userEmail') || 'guest@example.com';
+  const username = localStorage.getItem('username') || 'User';
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   // Available Groq models
   const groqModels = [
@@ -31,7 +42,6 @@ const CostSageChatbot: React.FC = () => {
     const fetchChatHistory = async () => {
       try {
         const response = await axios.get(`/api/chats/${userEmail}`);
-        console.log('Chat history response:', response.data); // Debug log
         const data = Array.isArray(response.data) ? response.data : [];
         const chats = data.map((chat: any) => ({
           id: chat._id,
@@ -41,11 +51,42 @@ const CostSageChatbot: React.FC = () => {
         setChatHistory(chats);
       } catch (error) {
         console.error('Failed to fetch chat history:', error);
-        setChatHistory([]); // Fallback to empty array
+        setChatHistory([]);
       }
     };
     fetchChatHistory();
   }, [userEmail]);
+
+  // Handle chat icon animation
+  useEffect(() => {
+    if (isFirstPrompt && !iconPlayed) {
+      const timer = setTimeout(() => {
+        setIconPlayed(true);
+      }, 3000); // Animation plays for 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [isFirstPrompt, iconPlayed]);
+
+  // Load a specific chat
+  const loadChat = async (chatId: string) => {
+    try {
+      const response = await axios.get(`/api/chats/${userEmail}/${chatId}`);
+      const chatData = response.data;
+      if (chatData && Array.isArray(chatData.messages)) {
+        const formattedMessages = chatData.messages.map((msg: any) => ({
+          text: msg.message,
+          isUser: msg.isUser,
+          model: msg.model,
+          timestamp: msg.timestamp || new Date().toISOString(),
+        }));
+        setMessages(formattedMessages);
+        setIsWelcomeVisible(false);
+        setIsFirstPrompt(false);
+      }
+    } catch (error) {
+      console.error('Failed to load chat:', error);
+    }
+  };
 
   // Initialize speech recognition
   useEffect(() => {
@@ -85,6 +126,9 @@ const CostSageChatbot: React.FC = () => {
     setMessages(updatedMessages);
     setInputText('');
     setIsWelcomeVisible(false);
+    if (isFirstPrompt) {
+      setIsFirstPrompt(false);
+    }
 
     // Save user message to MongoDB
     try {
@@ -178,7 +222,7 @@ const CostSageChatbot: React.FC = () => {
             timestamp: new Date().toISOString(),
           },
           {
-            text: 'I’ve processed your file. How can I assist further?',
+            text: 'Ive processed your file. How can I assist further?',
             isUser: false,
             model: selectedModel,
             timestamp: new Date().toISOString(),
@@ -186,6 +230,9 @@ const CostSageChatbot: React.FC = () => {
         ];
         setMessages(newMessages);
         setIsWelcomeVisible(false);
+        if (isFirstPrompt) {
+          setIsFirstPrompt(false);
+        }
 
         // Save to MongoDB
         await axios.post('/api/chats', {
@@ -196,7 +243,7 @@ const CostSageChatbot: React.FC = () => {
         });
         await axios.post('/api/chats', {
           userEmail,
-          message: 'I’ve processed your file. How can I assist further?',
+          message: 'Ive processed your file. How can I assist further?',
           isUser: false,
           model: selectedModel,
         });
@@ -234,7 +281,7 @@ const CostSageChatbot: React.FC = () => {
             timestamp: new Date().toISOString(),
           },
           {
-            text: 'I’ve processed your file. How can I assist further?',
+            text: 'Ive processed your file. How can I assist further?',
             isUser: false,
             model: selectedModel,
             timestamp: new Date().toISOString(),
@@ -242,6 +289,9 @@ const CostSageChatbot: React.FC = () => {
         ];
         setMessages(newMessages);
         setIsWelcomeVisible(false);
+        if (isFirstPrompt) {
+          setIsFirstPrompt(false);
+        }
 
         // Save to MongoDB
         await axios.post('/api/chats', {
@@ -252,7 +302,7 @@ const CostSageChatbot: React.FC = () => {
         });
         await axios.post('/api/chats', {
           userEmail,
-          message: 'I’ve processed your file. How can I assist further?',
+          message: 'Ive processed your file. How can I assist further?',
           isUser: false,
           model: selectedModel,
         });
@@ -265,14 +315,20 @@ const CostSageChatbot: React.FC = () => {
   const handleNewChat = () => {
     setMessages([]);
     setIsWelcomeVisible(true);
+    setIsFirstPrompt(true);
+    setIconPlayed(false);
+  };
+  
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
   return (
     <div className="page-container">
-      <div className="sidebar">
+      <div className={`sidebar ${sidebarOpen ? '' : 'closed'}`}>
         <div className="sidebar-header">
           <button onClick={handleNewChat} className="new-chat-button">
-            New Chat
+            <span>+</span> New Chat
           </button>
         </div>
         <div className="chat-history">
@@ -280,7 +336,11 @@ const CostSageChatbot: React.FC = () => {
           {chatHistory.length ? (
             <ul>
               {chatHistory.map(chat => (
-                <li key={chat.id} className="chat-item">
+                <li
+                  key={chat.id}
+                  className="chat-item"
+                  onClick={() => loadChat(chat.id)}
+                >
                   <span className="chat-title">{chat.title}</span>
                   <span className="chat-date">{chat.date}</span>
                 </li>
@@ -294,6 +354,9 @@ const CostSageChatbot: React.FC = () => {
       <div className="chatbot-container">
         <nav className="navbar">
           <div className="nav-left">
+            <button onClick={toggleSidebar} className="menu-button">
+              ☰
+            </button>
             <span className="website-name">Cost-Sage</span>
           </div>
           <div className="header-controls">
@@ -324,26 +387,33 @@ const CostSageChatbot: React.FC = () => {
               <p className="drag-text">Drop your file here</p>
             </div>
           )}
-          {isWelcomeVisible && (
+          {isWelcomeVisible && isFirstPrompt && (
             <div className="welcome-dialog">
-              <h1>Welcome to Cost-Sage!</h1>
+              {!iconPlayed && (
+                <img
+                  src="/assets/chat-icon.gif"
+                  alt="Chat Icon"
+                  className="chat-icon"
+                />
+              )}
+              <h1>{getGreeting()}, {username}!</h1>
               <p>
-                Your intelligent assistant for cost analysis and savings recommendations. Upload receipts, ask questions, or explore insights with our premium AI models.
+                How can I help you with your cost analysis today?
               </p>
-              <button onClick={() => setIsWelcomeVisible(false)}>Get Started</button>
+              <button onClick={() => setIsWelcomeVisible(false)}>Start Chatting</button>
             </div>
           )}
-          <div className="messages-container">
+          <div className={`messages-container ${isFirstPrompt && isWelcomeVisible ? 'centered' : ''}`}>
             {messages.map((msg, index) => (
               <div
                 key={index}
                 className={`message ${msg.isUser ? 'user-message' : 'bot-message'}`}
               >
-                <div className="avatar-container">
-                  <div className={msg.isUser ? 'user-avatar-placeholder' : 'avatar'}>
-                    {msg.isUser ? userEmail[0].toUpperCase() : 'AI'}
+                {!msg.isUser && (
+                  <div className="avatar-container">
+                    <div className="avatar">AI</div>
                   </div>
-                </div>
+                )}
                 <div className={`message-content ${msg.isUser ? '' : 'bot-response'}`}>
                   {msg.text}
                   <div className="message-timestamp">
@@ -355,7 +425,7 @@ const CostSageChatbot: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
         </div>
-        <div className="input-area">
+        <div className={`input-area ${isFirstPrompt && isWelcomeVisible ? 'centered-input' : ''}`}>
           <div className="input-card">
             <button
               onClick={handleImageUpload}
@@ -377,7 +447,7 @@ const CostSageChatbot: React.FC = () => {
               onChange={e => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
               className="text-input"
-              rows={2}
+              rows={1}
             />
             <button
               onClick={handleVoiceInput}

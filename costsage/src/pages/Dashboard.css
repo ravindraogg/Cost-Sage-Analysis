@@ -37,10 +37,10 @@ body, html {
   width: 100%;
 }
 .website-name {
-  font-size: 30px;
-  font-weight: 600;
-  color: #4361ee;
-  margin-left: 25px;
+  font-size: 30px!important;
+  font-weight: 600!important;
+  color: #4361ee !important;
+  margin-left: 25px!important;
 }
 
 /* Hamburger Button */

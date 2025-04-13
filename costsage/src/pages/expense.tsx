@@ -1228,7 +1228,7 @@ const ExpenseTracker = () => {
           <p style={{ marginBottom: "20px", color: "#6b7280" }}>
             Describe your expenses in natural language, and our AI will extract the details for you.
           </p>
-          <NavLink to={`/expense-chat/${expenseType}`} style={{ textDecoration: "none" }}>
+          <NavLink to={`/chat`} style={{ textDecoration: "none" }}>
             <motion.button
               style={{
                 background: "linear-gradient(135deg, #4361ee, #00d4ff)",
