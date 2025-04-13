@@ -75,7 +75,7 @@ const Dashboard = () => {
         throw new Error("No auth token found");
       }
 
-      const response = await axios.get("https://duhacks-p6t6.onrender.com/api/expenses/recent", {
+      const response = await axios.get("https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/recent", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -113,7 +113,7 @@ const Dashboard = () => {
       }
 
       const response = await axios.post(
-        "https://duhacks-p6t6.onrender.com/api/logout",
+        "https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/logout",
         {},
         {
           headers: {

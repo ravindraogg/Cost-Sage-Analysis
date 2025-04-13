@@ -1,0 +1,119 @@
+/* LoadingCoin Component Styles - Realistic version */
+.loading-coin-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    perspective: 1000px;
+  }
+  
+  .coin {
+    position: relative;
+    border-radius: 50%;
+    background: #ffd700;
+    transform-style: preserve-3d;
+    animation: flip-coin 1.5s infinite linear;
+  }
+  
+  /* Front face of the coin */
+  .coin::before {
+    content: "₹";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    color: #333;
+    backface-visibility: hidden;
+  }
+  
+  /* Back face of the coin */
+  .coin::after {
+    content: "💵";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotateY(180deg);
+    font-weight: bold;
+    color: #333;
+    backface-visibility: hidden;
+  }
+  
+  /* Coin sizes */
+  .coin-small {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #e0b700;
+  }
+  
+  .coin-small::before, .coin-small::after {
+    font-size: 8px;
+  }
+  
+  .coin-medium {
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid #e0b700;
+  }
+  
+  .coin-medium::before, .coin-medium::after {
+    font-size: 12px;
+  }
+  
+  .coin-large {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #e0b700;
+  }
+  
+  .coin-large::before, .coin-large::after {
+    font-size: 16px;
+  }
+  
+  /* Loading text */
+  .loading-text {
+    font-size: 14px;
+    color: inherit;
+  }
+  
+  /* 3D flip animation */
+  @keyframes flip-coin {
+    0% {
+      transform: rotateY(0);
+      box-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+      background: radial-gradient(circle at 30% 30%, #ffe766, #ffd700 50%, #e0b700);
+    }
+    
+    45% {
+      box-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
+      background: linear-gradient(90deg, #ffd700, #e0b700);
+    }
+    
+    50% {
+      transform: rotateY(180deg);
+      box-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
+      background: linear-gradient(90deg, #e0b700, #ffd700);
+    }
+    
+    55% {
+      box-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
+      background: linear-gradient(90deg, #ffd700, #e0b700);
+    }
+    
+    100% {
+      transform: rotateY(360deg);
+      box-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+      background: radial-gradient(circle at 30% 30%, #ffe766, #ffd700 50%, #e0b700);
+    }
+  }
+  
+  /* Responsive design for small screens */
+  @media (max-width: 480px) {
+    .loading-coin-container {
+      gap: 5px;
+    }
+    
+    .loading-text {
+      font-size: 12px;
+    }
+  }

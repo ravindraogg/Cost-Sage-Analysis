@@ -7,6 +7,10 @@
   padding: 0;
   box-sizing: border-box;
 }
+.brand-highlight {
+  text-decoration: none;
+  color: inherit; /* Optional: keeps the same color as surrounding text */
+}
 
 body {
   margin: 0;
@@ -21,11 +25,12 @@ body {
   max-width: 500px;
   margin: 50px auto;
   padding: 40px;
-  background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   margin-top: 100px;
+  border: 2px solid #000000;
+
 }
 
 .register-container:hover {
@@ -39,6 +44,10 @@ body {
   font-size: 28px;
   color: #333;
   font-weight: 600;
+}
+.brand-highlight {
+  text-decoration: none;
+  color: inherit; /* Optional: keeps the same color as surrounding text */
 }
 
 .form-group {

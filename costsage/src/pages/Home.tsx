@@ -2,18 +2,54 @@ import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
   faChartLine, faCogs, faRocket, faShieldAlt, faSignInAlt, 
-  faUsers, faQuestionCircle
+  faUsers, faQuestionCircle, faRobot, faFileAlt
 } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
 import "./Home.css";
 import Footer from "./Footer";
+import dashboardImage from '/assets/image.png'; // Ensure this path is correct
 
 const Home = () => {
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Renamed for clarity
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen); // Toggle state
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  // Mouse event handlers
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const image = container.querySelector(".hero-image-content") as HTMLImageElement | null;
+    if (!image) return;
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    const deltaX = (mouseX - centerX) / 20; // Scale down movement
+    const deltaY = (mouseY - centerY) / 20;
+
+    image.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const image = e.currentTarget.querySelector(".hero-image-content") as HTMLImageElement | null;
+    if (image) {
+      image.style.transition = "transform 0.1s ease";
+    }
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    const image = e.currentTarget.querySelector(".hero-image-content") as HTMLImageElement | null;
+    if (image) {
+      image.style.transform = "translate(0, 0)";
+      image.style.transition = "transform 0.3s ease";
+      image.style.animation = "float 3s ease-in-out infinite";
+    }
   };
 
   return (
@@ -38,7 +74,7 @@ const Home = () => {
           </button>
         </div>
 
-        {/* Mobile menu button */}
+        {/* Mobile menu toggle button */}
         <div className="mobile-menu-toggle" onClick={toggleMobileMenu}>
           <span className={isMobileMenuOpen ? "bar open" : "bar"}></span>
           <span className={isMobileMenuOpen ? "bar open" : "bar"}></span>
@@ -46,7 +82,7 @@ const Home = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section with Image */}
       <div className="hero-section">
         <div className="hero-content">
           <h2>Welcome to <span className="brand-highlight">Cost-Sage</span></h2>
@@ -55,17 +91,26 @@ const Home = () => {
             <button className="get-started-button" onClick={() => navigate("/register")}>
               <FontAwesomeIcon icon={faRocket} /> Get Started
             </button>
-            {/* <button className="demo-button" onClick={() => navigate("/demo")}>
-              Watch Demo
-            </button> */}
           </div>
         </div>
-        {/* <div className="hero-image">
-          <div className="dashboard-preview"></div>
-        </div> */}
+        <div className="hero-image">
+          <div
+            className="image-container"
+            onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            <div className="image-background"></div>
+            <img
+              src={dashboardImage} // Use the imported image
+              alt="Dashboard Preview"
+              className="hero-image-content"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Features Section */}
+      {/* Features Section with New Chatbot Feature */}
       <div id="features" className="features-section">
         <h3>Why Choose Cost-Sage?</h3>
         <div className="features-grid">
@@ -88,6 +133,16 @@ const Home = () => {
             <FontAwesomeIcon icon={faUsers} className="feature-icon" />
             <h4>Collaborative Tools</h4>
             <p>Share insights with your team or family members.</p>
+          </div>
+          <div className="feature">
+            <FontAwesomeIcon icon={faRobot} className="feature-icon" />
+            <h4>Cost Analysis Chatbot</h4>
+            <p>Upload financial files and get instant AI-powered insights and recommendations.</p>
+          </div>
+          <div className="feature">
+            <FontAwesomeIcon icon={faFileAlt} className="feature-icon" />
+            <h4>Document Analysis</h4>
+            <p>Our AI analyzes your financial documents to identify savings opportunities.</p>
           </div>
         </div>
       </div>
@@ -147,6 +202,18 @@ const Home = () => {
               </div>
             </div>
           </div>
+          <div className="testimonial">
+            <div className="testimonial-content">
+              <p>"The new chatbot feature analyzed my expenses and found savings I never would have discovered on my own."</p>
+            </div>
+            <div className="testimonial-author">
+              <div className="author-avatar"></div>
+              <div className="author-info">
+                <h5>Emily Rodriguez</h5>
+                <p>Marketing Director</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -179,6 +246,15 @@ const Home = () => {
             </div>
             <div className="faq-answer">
               <p>Absolutely! We offer specialized business plans with features designed for expense management, budgeting, and financial forecasting for companies of all sizes.</p>
+            </div>
+          </div>
+          <div className="faq-item">
+            <div className="faq-question">
+              <FontAwesomeIcon icon={faQuestionCircle} />
+              <h4>How does the Cost Analysis Chatbot work?</h4>
+            </div>
+            <div className="faq-answer">
+              <p>Simply upload your financial documents or statements, and our AI-powered chatbot will analyze the data to identify spending patterns, suggest savings opportunities, and provide personalized financial advice.</p>
             </div>
           </div>
         </div>

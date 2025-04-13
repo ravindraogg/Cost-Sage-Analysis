@@ -58,7 +58,7 @@ const AnalysisPage = () => {
         }
 
         const response = await axios.get(
-          `https://duhacks-p6t6.onrender.com/api/expenses/analysis/${encodeURIComponent(expenseType)}`,
+          `https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/analysis/${encodeURIComponent(expenseType)}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -93,7 +93,7 @@ const AnalysisPage = () => {
   
       // Call the backend endpoint
       const response = await axios.post(
-        "https://duhacks-p6t6.onrender.com/api/generate-insights", // Backend endpoint
+        "https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/generate-insights", // Backend endpoint
         { categories, amounts },
         {
           headers: {

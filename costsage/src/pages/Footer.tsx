@@ -1,45 +1,68 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGithub, faLinkedin, faTwitter } from "@fortawesome/free-brands-svg-icons";
+import { faTwitter, faFacebook, faInstagram } from "@fortawesome/free-brands-svg-icons";
 import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import "./Footer.css";
+
 const Footer = () => {
   return (
     <footer className="footer">
       <div className="footer-content">
-        {/* Copyright and Developers */}
+        {/* Cost-Sage Description */}
         <div className="footer-section">
-          <p>© 2025 Cost-Sage. All rights reserved.</p>
-          <p>Developed by: Ravindra S, Nitesh Reddy</p>
+          <h4>Cost-Sage</h4>
+          <p>Your ultimate platform for cost-cutting and financial planning.</p>
         </div>
 
         {/* Quick Links */}
         <div className="footer-section">
           <h4>Quick Links</h4>
           <ul>
-            <li><a href="/about">About Us</a></li>
-            <li><a href="/features">Features</a></li>
-            <li><a href="/contact">Contact</a></li>
-            <li><a href="/privacy-policy">Privacy Policy</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#testimonials">Testimonials</a></li>
           </ul>
+        </div>
+
+        {/* Contact Information */}
+        <div className="footer-section">
+          <h4>Contact Us</h4>
+          <p>Email: support@costsage.com</p>
+          <p>Phone: +1-800-COSTSAGE</p>
         </div>
 
         {/* Social Media Links */}
         <div className="footer-section">
           <h4>Follow Us</h4>
           <div className="social-icons">
-            <a href="https://github.com/PanatiNitesh/DUHACKS" target="_blank" rel="noopener noreferrer">
-              <FontAwesomeIcon icon={faGithub} />
-            </a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
-              <FontAwesomeIcon icon={faLinkedin} />
-            </a>
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://twitter.com/costsage" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
               <FontAwesomeIcon icon={faTwitter} />
             </a>
-            <a href="mailto:support@costsage.com">
+            <a href="https://facebook.com/costsage" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <FontAwesomeIcon icon={faFacebook} />
+            </a>
+            <a href="https://instagram.com/costsage" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <FontAwesomeIcon icon={faInstagram} />
+            </a>
+            <a href="mailto:support@costsage.com" aria-label="Email">
               <FontAwesomeIcon icon={faEnvelope} />
             </a>
           </div>
+        </div>
+      </div>
+
+      {/* Bottom Section with HACKHAZARDS */}
+      <div className="border-t">
+        <div>
+          <p>&copy; 2025 Cost-Sage. All rights reserved.</p>
+        </div>
+        <div className="flex">
+          {/* Add Thank You image and text here */}
+          <p>Special thanks to <a href="https://hackhazards.namespacecomm.in/" target="_blank" rel="noopener noreferrer">HACKHAZARDS</a> for providing us the platform to showcase our skills!</p>
+          <img 
+            src="https://hackhazards.namespacecomm.in/hack25purple.png" 
+            alt="HACKHAZARDS Logo" 
+            style={{ height: '30px', marginLeft: '10px' }} 
+          />
         </div>
       </div>
     </footer>

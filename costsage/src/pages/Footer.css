@@ -82,4 +82,46 @@
   .footer-section {
       text-align: center;
   }
+
+  .footer-section ul li {
+    margin: 15px 0; /* Increased spacing on small screens */
+  }
+}
+
+.footer .border-t {
+  border-top: 1px solid #4a5568; /* Equivalent to border-t border-gray-700 */
+  margin-top: 32px; /* Equivalent to mt-8 (2rem = 32px) */
+  padding-top: 32px; /* Equivalent to pt-8 */
+  display: flex;
+  flex-direction: column; /* Default to column */
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .footer .border-t {
+    flex-direction: row; /* Equivalent to md:flex-row */
+  }
+}
+
+.footer .border-t div:first-child {
+  margin-bottom: 16px; /* Equivalent to mb-4 */
+}
+
+@media (min-width: 768px) {
+  .footer .border-t div:first-child {
+    margin-bottom: 0; /* Remove margin on md screens */
+  }
+}
+
+.footer .border-t .flex {
+  display: flex; /* Ensure flex behavior */
+  gap: 16px; /* Maintain space-x-4 */
+  align-items: center; /* Align text and image vertically */
+}
+
+/* Style for the thank-you image */
+.footer .border-t .flex img {
+  height: 30px; /* Match inline style, adjustable */
+  vertical-align: middle; /* Align with text */
 }
