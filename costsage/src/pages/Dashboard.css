@@ -29,12 +29,18 @@ body, html {
   left: 0;
   z-index: 1000;
 }
-
+.centered-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  width: 100%;
+}
 .website-name {
   font-size: 30px;
   font-weight: 600;
   color: #4361ee;
-  margin-left: 25px; /* Adjust as needed */
+  margin-left: 25px;
 }
 
 /* Hamburger Button */
@@ -47,7 +53,7 @@ body, html {
   padding: 8px;
   border-radius: 50%;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-right: 12px; /* Adjust as needed */
+  margin-right: 12px;
   transform: translateX(-20px);
 }
 
@@ -99,6 +105,17 @@ body, html {
   color: #0056b3;
 }
 
+.sidebar-menu li.freemium-feature {
+  background: linear-gradient(90deg, #4361ee, #00d4ff);
+  color: white;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.sidebar-menu li.freemium-feature:hover {
+  background: linear-gradient(90deg, #3351cc, #00b4dd);
+}
+
 /* Main Section */
 .main-section {
   margin-top: 80px;
@@ -112,9 +129,9 @@ body, html {
   margin: 0 auto;
   padding: 16px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(600px, 1fr)); /* Responsive grid */
-  gap: 24px; /* Space between cards */
-  justify-content: center; /* Centers the grid */
+  grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+  gap: 24px;
+  justify-content: center;
 }
 
 /* Pinterest-style Cards */
@@ -128,9 +145,9 @@ body, html {
   position: relative;
   transform: translateY(0);
   display: flex;
-  flex-direction: row; /* Image on the left, content on the right */
-  align-items: flex-start; /* Align items to the top */
-  border: 2px solid rgba(0, 68, 204, 0.4); /* Blue border for a premium look */
+  flex-direction: row;
+  align-items: flex-start;
+  border: 2px solid rgba(0, 68, 204, 0.4);
   padding: 16px;
 }
 
@@ -155,33 +172,80 @@ body, html {
   opacity: 1;
 }
 
+/* Freemium Card Styles */
+.feature-card.freemium-card {
+  background: linear-gradient(135deg, #ffffff, #e6f0ff);
+  border: 2px solid transparent;
+  box-shadow: 0 4px 20px rgba(67, 97, 238, 0.3);
+  position: relative;
+  overflow: visible;
+}
+
+.feature-card.freemium-card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 18px;
+  background: linear-gradient(45deg, #4361ee, #00d4ff);
+  z-index: -1;
+  transition: opacity 0.3s ease;
+  opacity: 0.8;
+}
+
+.feature-card.freemium-card:hover::before {
+  opacity: 1;
+}
+
+.feature-card.freemium-card:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 12px 32px rgba(67, 97, 238, 0.4);
+}
+
+.feature-card.freemium-card .card-content h2 {
+  color: #2233aa;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card.freemium-card .card-content p {
+  color: #333;
+}
+
 .card-image {
-  width: 220px; /* Fixed width */
-  height: 220px; /* Fixed height */
-  object-fit: cover; /* Ensure the image covers the area without distortion */
-  border-radius: 16px; /* Rounded edges */
-  margin-right: 24px; /* Space between image and text */
-  flex-shrink: 0; /* Prevent the image from shrinking */
+  width: 220px;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-right: 24px;
+  flex-shrink: 0;
+  background: #e0e0e0;
+}
+
+.feature-card.freemium-card .card-image {
+  border: 2px solid #4361ee;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .card-content {
   display: flex;
-  flex-direction: column; /* Stack title and description vertically */
-  justify-content: flex-start; /* Align content to the top */
-  align-items: flex-start; /* Align text to the left */
-  flex: 1; /* Take remaining space */
-  text-align: left; /* Ensure text aligns to the left */
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex: 1;
+  text-align: left;
 }
 
 .feature-card h2 {
-  font-size: 26px; /* Bigger text */
-  font-weight: 700; /* Extra bold */
-  color: #0044cc; /* Strong blue */
+  font-size: 26px;
+  font-weight: 700;
+  color: #0044cc;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   font-family: 'Poppins', sans-serif;
-  margin-bottom: 10px; /* Space below the title */
-  text-align: left; /* Ensure title aligns to the left */
+  margin-bottom: 10px;
+  text-align: left;
 }
 
 .feature-card p {
@@ -191,13 +255,56 @@ body, html {
   font-weight: 500;
   font-family: 'Roboto', sans-serif;
   margin-bottom: 8px;
-  text-align: left; /* Ensure description aligns to the left */
+  text-align: left;
+}
+
+.feature-card .sub-feature {
+  font-size: 16px;
+  color: #555;
+  line-height: 1.6;
+  font-weight: 400;
+  margin-top: 8px;
+  text-align: left;
+}
+
+/* CTA Button */
+.cta-button {
+  background: linear-gradient(90deg, #4361ee, #00d4ff);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cta-button:hover {
+  background: linear-gradient(90deg, #3351cc, #00b4dd);
+  transform: scale(1.05);
+}
+
+/* Freemium Badge */
+.freemium-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #00d4ff;
+  color: #1a3c34;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: rotate(10deg);
 }
 
 /* Responsive Adjustments */
 @media (max-width: 1024px) {
   .feature-cards {
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* Adjust for tablets */
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   }
 
   .feature-card {
@@ -216,6 +323,20 @@ body, html {
 
   .feature-card p {
     font-size: 16px;
+  }
+
+  .feature-card .sub-feature {
+    font-size: 14px;
+  }
+
+  .cta-button {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+
+  .freemium-badge {
+    font-size: 10px;
+    padding: 3px 10px;
   }
 
   .main-section {
@@ -238,7 +359,7 @@ body, html {
     font-size: 24px;
     padding: 6px;
     margin-right: 8px;
-    transform: none; /* Remove transform on mobile */
+    transform: none;
   }
 
   .floating-sidebar {
@@ -252,29 +373,42 @@ body, html {
   }
 
   .feature-cards {
-    grid-template-columns: 1fr; /* One column for mobile */
+    grid-template-columns: 1fr;
   }
 
   .feature-card {
-    flex-direction: column; /* Stack image on top in smaller screens */
+    flex-direction: column;
     align-items: center;
     padding: 12px;
     text-align: center;
   }
 
+  .feature-card.freemium-card {
+    flex-direction: column;
+  }
+
   .card-image {
-    margin: 0 0 16px 0; /* Space below image */
+    margin: 0 0 16px 0;
     width: 150px;
     height: 150px;
   }
 
+  .feature-card.freemium-card .card-image {
+    margin-bottom: 16px;
+  }
+
   .card-content {
-    align-items: center; /* Center align text */
-    text-align: center; /* Center align text */
+    align-items: center;
+    text-align: center;
   }
 
   .feature-card h2, .feature-card p {
-    text-align: center; /* Center align text */
+    text-align: center;
+  }
+
+  .feature-card .sub-feature {
+    font-size: 14px;
+    text-align: center;
   }
 
   .feature-card h2 {
@@ -283,6 +417,16 @@ body, html {
 
   .feature-card p {
     font-size: 14px;
+  }
+
+  .cta-button {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+
+  .freemium-badge {
+    font-size: 10px;
+    padding: 3px 10px;
   }
 
   .main-section {
@@ -334,6 +478,20 @@ body, html {
     font-size: 12px;
   }
 
+  .feature-card .sub-feature {
+    font-size: 12px;
+  }
+
+  .cta-button {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .freemium-badge {
+    font-size: 8px;
+    padding: 2px 8px;
+  }
+
   .main-section {
     padding: 8px;
   }
@@ -351,12 +509,26 @@ body, html {
   }
 }
 
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
 .feature-card {
   animation: fadeIn 0.5s ease-out forwards;
   opacity: 0;
 }
 
+.feature-card.freemium-card {
+  animation: fadeIn 0.7s ease-out forwards, bounce 1.5s infinite ease-in-out;
+}
+
 /* Staggered animations */
+.feature-card:nth-child(1) { animation-delay: 0s; }
 .feature-card:nth-child(2) { animation-delay: 0.1s; }
 .feature-card:nth-child(3) { animation-delay: 0.2s; }
 .feature-card:nth-child(4) { animation-delay: 0.3s; }
@@ -456,7 +628,10 @@ body, html {
   }
 }
 
-/* Logout Button */
+.brand-highlight {
+  text-decoration: none;
+  color: inherit; 
+}
 .logout-button {
   background-color: #ab3939;
   color: white;

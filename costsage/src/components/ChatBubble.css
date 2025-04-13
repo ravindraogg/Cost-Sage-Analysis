@@ -1,0 +1,16 @@
+.message-attachments {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .attachment-link {
+    color: #4361ee;
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+  
+  .attachment-link:hover {
+    text-decoration: underline;
+  }

@@ -9,22 +9,21 @@
 }
 
 body, html {
-  margin: 0;
-  padding: 0;
   background: #f9f9f9;
   font-family: 'Poppins', 'Arial', sans-serif;
   line-height: 1.6;
 }
 
-/* Analysis Container */
+/* Container */
 .analysis-container {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-/* Chart Container */
-.chart-container {
+/* Chart & Insights Containers */
+.chart-container,
+.insights-container {
   margin: 20px 0;
   padding: 20px;
   background-color: #f9f9f9;
@@ -32,15 +31,7 @@ body, html {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Insights Container */
-.insights-container {
-  margin-top: 40px;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
+/* Insights */
 .insights-container h2 {
   margin-bottom: 20px;
   font-size: 24px;
@@ -58,56 +49,6 @@ body, html {
   text-align: justify;
 }
 
-/* Error Message */
-.error-message {
-  color: red;
-}
-
-/* Back Button */
-.back-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  background-color: black;
-  color: black;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.back-button:hover {
-  background-color: #0056b3;
-}
-
-/* Chart Tabs */
-.chart-tabs {
-  display: flex;
-  justify-content: center;
-  margin: 20px 0;
-  gap: 10px;
-}
-
-.tab-button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  background-color: #f0f0f0;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.tab-button.active {
-  background-color: #3366cc;
-  color: white;
-}
-
-.tab-button:hover {
-  background-color: #ddd;
-}
-
-/* Insights List */
 .insights-list {
   padding-left: 20px;
 }
@@ -117,7 +58,6 @@ body, html {
   line-height: 1.6;
 }
 
-/* Insights Card */
 .insights-card {
   background-color: white;
   border-radius: 8px;
@@ -182,6 +122,56 @@ body, html {
   font-style: italic;
 }
 
+/* Error Message */
+.error-message {
+  color: red;
+}
+
+/* Back Button */
+.back-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: none;
+  border: 1px solid black;
+  color: black;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Chart Tabs */
+.chart-tabs {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  gap: 10px;
+}
+
+.tab-button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.tab-button.active {
+  background-color: #3366cc;
+  color: white;
+}
+
+.tab-button:hover {
+  background-color: #ddd;
+}
+
 /* Navbar */
 .navbar {
   width: 100%;
@@ -193,17 +183,12 @@ body, html {
   color: white;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  margin-right: 0; /* Removed unnecessary margin */
-  transform: none; /* Removed unnecessary transform */
 }
 
 .navbar-brand h1 {
-  margin: 0;
   font-size: 24px;
   font-weight: 600;
-  transition: all 0.3s ease;
-  margin-left: 0; /* Removed unnecessary margin */
-  transform: none; /* Removed unnecessary transform */
+  margin: 0;
 }
 
 .navbar-links .back-button {
@@ -211,31 +196,16 @@ body, html {
   border: 2px solid white;
   color: white;
   padding: 10px 20px;
+  border: 2px solid #000000;
   font-size: 16px;
-  cursor: pointer;
   border-radius: 8px;
-  transition: background-color 0.3s ease, color 0.3s ease, all 0.3s ease;
-  margin-right: 0; /* Removed unnecessary margin */
-  transform: none; /* Removed unnecessary transform */
-}
-
-.navbar-links .login-button:hover {
-  background-color: white;
-  color: transparent !important;
-}
-
-.back-button {
-  background: none;
-  border: 1px solid black;
-  color: black;
-  font-size: 16px;
   cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 5px;
+  transition: all 0.3s ease;
 }
 
-.back-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.navbar-links .back-button:hover {
+  background-color: white;
+  color: black;
 }
 
 /* Responsive Design */
@@ -256,14 +226,14 @@ body, html {
 
   .insights-container h2 {
     font-size: 22px;
-    margin-bottom: 15px;
   }
 
   .insights-text {
     font-size: 15px;
   }
 
-  .back-button {
+  .back-button,
+  .navbar-links .back-button {
     padding: 8px 15px;
     font-size: 14px;
   }
@@ -271,7 +241,6 @@ body, html {
   .tab-button {
     padding: 8px 12px;
     font-size: 14px;
-    margin: 0 5px;
   }
 
   .insights-card {
@@ -290,40 +259,19 @@ body, html {
   .navbar-brand h1 {
     font-size: 22px;
   }
-
-  .navbar-links .back-button {
-    padding: 8px 15px;
-    font-size: 14px;
-  }
 }
 
 @media (max-width: 768px) {
-  .analysis-container {
-    padding: 10px;
-  }
-
-  .chart-container,
-  .insights-container {
-    padding: 10px;
-    margin: 10px 0;
-  }
-
   .chart-container {
     height: 250px;
   }
 
   .insights-container h2 {
     font-size: 20px;
-    margin-bottom: 10px;
   }
 
   .insights-text {
     font-size: 14px;
-  }
-
-  .back-button {
-    padding: 6px 12px;
-    font-size: 12px;
   }
 
   .chart-tabs {
@@ -335,9 +283,14 @@ body, html {
   .tab-button {
     padding: 6px 10px;
     font-size: 12px;
-    margin: 0;
     width: 100%;
     text-align: center;
+  }
+
+  .back-button,
+  .navbar-links .back-button {
+    padding: 6px 12px;
+    font-size: 12px;
   }
 
   .insights-card {
@@ -355,14 +308,13 @@ body, html {
   }
 
   .insight-number {
-    margin-right: 0;
     margin-bottom: 5px;
   }
 
   .navbar {
-    padding: 10px 15px;
     flex-direction: column;
     align-items: flex-start;
+    padding: 10px 15px;
   }
 
   .navbar-brand {
@@ -372,39 +324,23 @@ body, html {
   .navbar-brand h1 {
     font-size: 18px;
   }
-
-  .navbar-links .back-button {
-    padding: 6px 12px;
-    font-size: 12px;
-    margin-right: 5px;
-  }
 }
 
 @media (max-width: 480px) {
-  .analysis-container {
-    padding: 8px;
-  }
-
-  .chart-container,
-  .insights-container {
-    padding: 8px;
-    margin: 8px 0;
-  }
-
   .chart-container {
     height: 200px;
   }
 
   .insights-container h2 {
     font-size: 18px;
-    margin-bottom: 8px;
   }
 
   .insights-text {
     font-size: 12px;
   }
 
-  .back-button {
+  .back-button,
+  .navbar-links .back-button {
     padding: 5px 10px;
     font-size: 10px;
   }
@@ -421,18 +357,5 @@ body, html {
 
   .insights-header h2 {
     font-size: 0.9rem;
-  }
-
-  .navbar {
-    padding: 8px 10px;
-  }
-
-  .navbar-brand h1 {
-    font-size: 16px;
-  }
-
-  .navbar-links .back-button {
-    padding: 5px 10px;
-    font-size: 10px;
   }
 }

@@ -1,0 +1,39 @@
+/* Welcome Dialog */
+.welcome-dialog {
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    padding: 32px;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    margin-top: 10vh;
+  }
+  
+  .welcome-dialog h1 {
+    color: #4361ee;
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+  
+  .welcome-dialog p {
+    color: #64748b;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+  
+  .welcome-dialog button {
+    background-color: #4361ee;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .welcome-dialog button:hover {
+    background-color: #3750d2;
+  }

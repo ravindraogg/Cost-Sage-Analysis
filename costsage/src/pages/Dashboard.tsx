@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Dashboard.css";
+import FullScreenLoading from "./FullScreenLoading";
+import LoadingCoin from "./LoadingCoin";
+import costAnalysisChatbotImage from './../../assets/chat-icon.gif';
+import expenseTrackerImage from './../../assets/expense-tracker.png';
+import businessExpenseImage from './../../assets/business-expense.png';
+import personalExpenseImage from './../../assets/personal-expense.png';
+import dailyExpenseImage from './../../assets/daily-expense.png';
+import otherExpensesImage from './../../assets/other-expenses.png';
 
 interface Expense {
   id: number;
@@ -14,54 +22,62 @@ interface Expense {
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [username, setUsername] = useState(""); // Added username state
-  const [, setUserEmail] = useState(""); // Keep userEmail for other functionality
+  const [username, setUsername] = useState("");
+  const [, setUserEmail] = useState("");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const expenseTypes = [
     {
+      name: "Cost Analysis Chatbot",
+      img: costAnalysisChatbotImage,
+      description: "Upload financial files and get instant AI-powered insights and recommendations.",
+      isFreemium: true,
+    },
+    {
       name: "Full Expense Tracker",
-      img: "expense-tracker.png",
+      img: expenseTrackerImage,
       description: "Track all your expenses in one place",
     },
     {
       name: "Business Expense Tracker",
-      img: "business-expense.png",
+      img: businessExpenseImage,
       description: "Manage your business-related expenses",
     },
     {
       name: "Personal Expense Tracker",
-      img: "personal-expense.png",
+      img: personalExpenseImage,
       description: "Keep track of your personal spending",
     },
     {
       name: "Daily Expense Tracker",
-      img: "daily-expense.png",
+      img: dailyExpenseImage,
       description: "Monitor your daily expenditures",
     },
     {
       name: "Other Expenses",
-      img: "other-expenses.png",
+      img: otherExpensesImage,
       description: "Track miscellaneous expenses",
     },
   ];
-
+  
   useEffect(() => {
     const init = async () => {
-      const storedUsername = localStorage.getItem("username"); // Retrieve username
-      const storedUserEmail = localStorage.getItem("userEmail"); // Retrieve userEmail
+      const storedUsername = localStorage.getItem("username");
+      const storedUserEmail = localStorage.getItem("userEmail");
 
       if (storedUsername) {
-        setUsername(storedUsername); // Set username
+        setUsername(storedUsername);
       }
       if (storedUserEmail) {
-        setUserEmail(storedUserEmail); // Set userEmail
+        setUserEmail(storedUserEmail);
       }
 
       await fetchRecentExpenses();
+      setPageLoading(false);
     };
     init();
   }, []);
@@ -101,12 +117,14 @@ const Dashboard = () => {
   };
 
   const goToExpenseTracker = (featureName: string) => {
+    setPageLoading(true);
     const formattedFeature = featureName.toLowerCase().replace(/\s+/g, "-");
     navigate(`/expense/${formattedFeature}`);
   };
 
   const handleLogout = async () => {
     try {
+      setPageLoading(true);
       const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("No auth token found");
@@ -123,7 +141,6 @@ const Dashboard = () => {
       );
 
       if (response.data.success) {
-        // Clear local storage and redirect to login
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("userEmail");
@@ -134,6 +151,7 @@ const Dashboard = () => {
     } catch (err) {
       console.error("Logout error:", err);
       alert("Failed to logout. Please try again.");
+      setPageLoading(false);
     }
   };
 
@@ -146,87 +164,116 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <nav className="navbar">
-        <div className="navbar-left">
-          <h1 className="website-name">Cost-Sage</h1>
-        </div>
+    <>
+      <FullScreenLoading 
+        isLoading={pageLoading} 
+        message="Loading Cost-Sage..." 
+        coinSize="large" 
+      />
+      
+      <div className="dashboard-container">
+        <nav className="navbar">
+          <div className="navbar-left">
+            <Link to="/" className="brand-highlight">
+            <h1 className="website-name">Cost-Sage</h1>
+            </Link>
+          </div>
           <span className="username">Welcome, {username}</span>
-        <div className="navbar-right">
-          <button className="hamburger-button" onClick={toggleSidebar}>
-            ☰
-          </button>
-        </div>
-      </nav>
-
-      <div className={`floating-sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <ul className="sidebar-menu">
-          {expenseTypes.map((feature) => (
-            <li key={feature.name} onClick={() => goToExpenseTracker(feature.name)}>
-              {feature.name}
-            </li>
-          ))}
-          <li>
-            <button className="logout-button" onClick={handleLogout}>
-              Logout
+          <div className="navbar-right">
+            <button className="hamburger-button" onClick={toggleSidebar}>
+              ☰
             </button>
-          </li>
-        </ul>
-      </div>
+          </div>
+        </nav>
 
-      <div className="main-section">
-        <div className="feature-cards">
-          {expenseTypes.map((feature) => (
-            <div
-              className="feature-card"
-              key={feature.name}
-              onClick={() => goToExpenseTracker(feature.name)}
-            >
-              <img src={feature.img} alt={feature.name} className="card-image" />
-              <div className="card-content">
-                <h2>{feature.name}</h2>
-                <p>{feature.description}</p>
-              </div>
-            </div>
-          ))}
+        <div className={`floating-sidebar ${isSidebarOpen ? "open" : ""}`}>
+          <ul className="sidebar-menu">
+            {expenseTypes.map((feature) => (
+              <li 
+                key={feature.name} 
+                onClick={() => goToExpenseTracker(feature.name)}
+                className={feature.isFreemium ? "freemium-feature" : ""}
+              >
+                {feature.name}
+              </li>
+            ))}
+            <li>
+              <button className="logout-button" onClick={handleLogout}>
+                Logout
+              </button>
+            </li>
+          </ul>
         </div>
 
-        <div className="recent-expenses">
-          <h2>Recent Expenses Across All Categories</h2>
-          <div className="expense-history">
-            {loading && <p>Loading expenses...</p>}
-            {error && <p className="error-message">Error: {error}</p>}
-            {!loading && !error && expenses.length === 0 && (
-              <p>No recent expenses found. Start adding expenses to see them here!</p>
-            )}
-            {!loading && !error && expenses.length > 0 && (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Category</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Amount (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenses.map((expense, index) => (
-                    <tr key={expense.id || index}>
-                      <td>{formatDate(expense.date)}</td>
-                      <td>{expense.category}</td>
-                      <td>{expense.expenseType}</td>
-                      <td>{expense.description}</td>
-                      <td>₹{expense.amount.toFixed(2)}</td>
+        <div className="main-section">
+          <div className="feature-cards">
+            {expenseTypes.map((feature) => (
+              <div
+                className={`feature-card ${feature.isFreemium ? "freemium-card" : ""}`}
+                key={feature.name}
+                onClick={() => goToExpenseTracker(feature.name)}
+              >
+                <img src={feature.img} alt={feature.name} className="card-image" />
+                <div className="card-content">
+                  <h2>{feature.name}</h2>
+                  <p>{feature.description}</p>
+                  {feature.name === "Cost Analysis Chatbot" && (
+                    <p className="sub-feature">
+                      <strong>Document Analysis:</strong> Our AI analyzes your financial documents to identify savings opportunities.
+                    </p>
+                  )}
+                  {feature.isFreemium && (
+                    <button className="cta-button">
+                      Start Free Now!
+                    </button>
+                  )}
+                </div>
+                {feature.isFreemium && <span className="freemium-badge">Freemium!</span>}
+              </div>
+            ))}
+          </div>
+
+          <div className="recent-expenses">
+            <h2>Recent Expenses Across All Categories</h2>
+            <div className="expense-history">
+              {loading && (
+                <div className="centered-loading">
+                  <LoadingCoin size="medium" text="Loading expenses..." />
+                </div>
+              )}
+              {error && <p className="error-message">Error: {error}</p>}
+              {!loading && !error && expenses.length === 0 && (
+                <p>No recent expenses found. Start adding expenses to see them here!</p>
+              )}
+              {!loading && !error && expenses.length > 0 && (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Category</th>
+                      <th>Type</th>
+                      <th>Description</th>
+                      <th>Amount (₹)</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  </thead>
+                  <tbody>
+                    {expenses.map((expense, index) => (
+                      <tr key={expense.id || index}>
+                        <td>{formatDate(expense.date)}</td>
+                        <td>{expense.category}</td>
+                        <td>{expense.expenseType}</td>
+                        <td>{expense.description}</td>
+                        <td>₹{expense.amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
