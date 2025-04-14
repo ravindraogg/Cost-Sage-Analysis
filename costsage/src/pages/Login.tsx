@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import LoadingCoin from "./LoadingCoin"; // Import the LoadingCoin component
 import "./Login.css";
 import Footer from "./Footer";
+const base = import.meta.env.VITE_BASE_URL;
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ const Login = () => {
     }
 
     try {
-      const response = await axios.post("https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/login", formData);
+      const response = await axios.post(`${base}/api/login`, formData);
 
       if (response.data.success) {
         // Store token for authentication

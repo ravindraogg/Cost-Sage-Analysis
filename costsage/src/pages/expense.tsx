@@ -5,6 +5,7 @@ import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import LoadingCoin from "./LoadingCoin";
 import FullScreenLoading from "./FullScreenLoading";
+const base = import.meta.env.VITE_BASE_URL;
 
 interface Expense {
   _id: string;
@@ -361,15 +362,14 @@ const ExpenseTracker = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/${encodeURIComponent(
-          expenseType
-        )}`,
+        `${base}/api/expenses/${encodeURIComponent(expenseType)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+      
       if (response.data.success) {
         const formattedExpenses = response.data.expenses.map((expense: any) => ({
           _id: expense._id,
@@ -432,7 +432,7 @@ const ExpenseTracker = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses",
+        `${base}/api/expenses`,
         {
           expenses: [newExpense],
           username,
@@ -497,7 +497,7 @@ const ExpenseTracker = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.delete(
-        `https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/${expenseId}`,
+        `${base}/api/expenses/${expenseId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -527,7 +527,7 @@ const ExpenseTracker = () => {
       const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
 
       await axios.post(
-        "https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/analyze",
+        `${base}/api/expenses/analyze`,
         {
           username,
           userEmail,

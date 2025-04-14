@@ -5,6 +5,9 @@ import LoadingCoin from "./LoadingCoin";
 import "./Register.css";
 import Footer from "./Footer";
 
+
+const base = import.meta.env.VITE_BASE_URL;
+
 const Register = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -33,7 +36,7 @@ const Register = () => {
     }
 
     try {
-      const response = await axios.post("https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/register", formData);
+      const response = await axios.post(`${base}/api/register`, formData);
       console.log("API Response:", response.data); // Debug the response
       const storedUsername = response.data.username || response.data.name || formData.name;
       console.log("Storing username:", storedUsername); // Debug the value being stored

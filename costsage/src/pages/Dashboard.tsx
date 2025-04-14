@@ -10,6 +10,7 @@ import businessExpenseImage from './../../assets/business-expense.png';
 import personalExpenseImage from './../../assets/personal-expense.png';
 import dailyExpenseImage from './../../assets/daily-expense.png';
 import otherExpensesImage from './../../assets/other-expenses.png';
+const base = import.meta.env.VITE_BASE_URL;
 
 interface Expense {
   id: number;
@@ -91,7 +92,7 @@ const Dashboard = () => {
         throw new Error("No auth token found");
       }
 
-      const response = await axios.get("https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/recent", {
+      const response = await axios.get(`${base}/api/expenses/recent`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -135,7 +136,7 @@ const Dashboard = () => {
       }
 
       const response = await axios.post(
-        "https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/logout",
+        `${base}/api/logout`,
         {},
         {
           headers: {

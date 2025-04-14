@@ -16,8 +16,8 @@ import {
 } from "chart.js";
 import LoadingCoin from "./LoadingCoin";
 import "./AnalysisPage.css";
+const base = import.meta.env.VITE_BASE_URL;
 
-// Register Chart.js components
 Chart.register(
   CategoryScale,
   LinearScale,
@@ -72,7 +72,7 @@ const AnalysisPage = () => {
         }
 
         const response = await axios.get(
-          `https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/analysis/${encodeURIComponent(
+          `${base}/api/expenses/analysis/${encodeURIComponent(
             expenseType
           )}`,
           {
@@ -129,7 +129,7 @@ const AnalysisPage = () => {
       }
 
       const response = await axios.post(
-        `https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/insights`,
+        `${base}/api/insights`,
         {
           expenseType,
           categories,

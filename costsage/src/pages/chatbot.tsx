@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PlusCircle, Menu, Paperclip, Mic, Send, X, Trash2, Home  } from 'lucide-react';
 import './chatbot.css';
 import { useNavigate } from 'react-router-dom';
+const base = import.meta.env.VITE_BASE_URL;
 
 interface Message {
   text: string;
@@ -51,7 +52,7 @@ export default function CostSageChatbot() {
   const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
 
   // Backend base URL
-  const API_BASE_URL = 'https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net';
+  const API_BASE_URL = base;
 
   // Get greeting based on time of day
   const getGreeting = () => {
