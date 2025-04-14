@@ -1,3 +1,4 @@
+
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGithub,
@@ -8,7 +9,9 @@ import "./AboutUs.css"; // Import the CSS file
 
 const AboutUs = () => {
   return (
+    
     <div className="about-us-container">
+      
       <h1>About Us</h1>
       <p className="about-description">
         We are a passionate team of developers dedicated to building innovative
@@ -21,7 +24,7 @@ const AboutUs = () => {
         {/* Team Member 1 */}
         <div className="team-member">
           <img
-            src="public/assets/ravindra.jpg"
+            src="/assets/ravindra.jpg"
             alt="Ravindra S"
             className="profile-pic"
             onError={(e) => {
@@ -29,7 +32,7 @@ const AboutUs = () => {
             }}
           />
           <h2>Ravindra S</h2>
-          <p className="role">Full Stack Developer</p>
+          <p className="role">Backend Developer</p>
           <p className="bio">
             Passionate about building scalable web applications and solving
             complex problems. Experienced in React, Node.js, and cloud
@@ -63,7 +66,7 @@ const AboutUs = () => {
         {/* Team Member 2 */}
         <div className="team-member">
           <img
-            src="public/assets/nitesh.jpg"
+            src="/assets/nitesh.jpg"
             alt="Nitesh Reddy"
             className="profile-pic"
             onError={(e) => {
@@ -93,6 +96,86 @@ const AboutUs = () => {
             </a>
             <a
               href="https://www.linkedin.com/in/nitesh-reddy-dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FontAwesomeIcon icon={faLinkedin} />
+            </a>
+          </div>
+        </div>
+        <div className="team-member">
+          <img
+            src="https://via.placeholder.com/150"
+            alt="Ravindra S"
+            className="profile-pic"
+            onError={(e) => {
+              e.currentTarget.src = "https://via.placeholder.com/150"; // Fallback image
+            }}
+          />
+          <h2>Masood</h2>
+          <p className="role">Backend Developer</p>
+          <p className="bio">
+            Passionate about building scalable web applications and solving
+            complex problems. Experienced in React, Node.js, and cloud
+            technologies.
+          </p>
+          <div className="social-links">
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FontAwesomeIcon icon={faGithub} />
+            </a>
+            <a
+              href="https://X.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FontAwesomeIcon icon={faTwitter} />
+            </a>
+            <a
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FontAwesomeIcon icon={faLinkedin} />
+            </a>
+          </div>
+        </div>
+        <div className="team-member">
+          <img
+            src="https://via.placeholder.com/150"
+            alt="Ravindra S"
+            className="profile-pic"
+            onError={(e) => {
+              e.currentTarget.src = "https://via.placeholder.com/150"; // Fallback image
+            }}
+          />
+          <h2>Mithun</h2>
+          <p className="role">Frontend Developer</p>
+          <p className="bio">
+            Passionate about building scalable web applications and solving
+            complex problems. Experienced in React, Node.js, and cloud
+            technologies.
+          </p>
+          <div className="social-links">
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FontAwesomeIcon icon={faGithub} />
+            </a>
+            <a
+              href="https://X.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FontAwesomeIcon icon={faTwitter} />
+            </a>
+            <a
+              href="https://linkedin.com"
               target="_blank"
               rel="noopener noreferrer"
             >
