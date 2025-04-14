@@ -3,10 +3,11 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import "./expense.css";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import LoadingCoin from "./LoadingCoin"; // Import LoadingCoin
+import LoadingCoin from "./LoadingCoin";
+import FullScreenLoading from "./FullScreenLoading";
 
 interface Expense {
-  id: number;
+  _id: string;
   amount: number;
   category: string;
   description: string;
@@ -40,23 +41,32 @@ const ExpenseTracker = () => {
   const [showExistingExpenses, setShowExistingExpenses] = useState<boolean>(true);
   const [showPreviousExpenseCard, setShowPreviousExpenseCard] = useState<boolean>(true);
   const [freshStart, setFreshStart] = useState<boolean>(false);
+  const [deleting, setDeleting] = useState<boolean>(false);
 
-  const expenseType = location.pathname
+  // Normalize expenseType to match server enum
+  const expenseTypeRaw = location.pathname
     .split("/")
     .filter(Boolean)[1]
     .replace(/-/g, " ")
     .toLowerCase();
 
-  // Capitalize first letter of each word for display
+  const expenseTypeMap: { [key: string]: string } = {
+    "business expense": "business expense tracker",
+    "personal expense": "personal expense tracker",
+    "daily expense": "daily expense tracker",
+    "full expense": "full expense tracker",
+    "other expenses": "other expenses",
+  };
+
+  const expenseType = expenseTypeMap[expenseTypeRaw] || "other expenses";
+
   const capitalizedExpenseType = expenseType
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
-  // Complete expense categories with all options
   const expenseCategories: ExpenseCategory = {
     business: [
-      // Office Expenses
       "Office Supplies",
       "Office Furniture",
       "Office Equipment",
@@ -65,8 +75,6 @@ const ExpenseTracker = () => {
       "Office Maintenance",
       "Office Decoration",
       "Office Security",
-
-      // Technology
       "Software Subscriptions",
       "Hardware",
       "IT Services",
@@ -75,8 +83,6 @@ const ExpenseTracker = () => {
       "Tech Support",
       "Website Expenses",
       "Mobile Apps",
-
-      // Marketing & Sales
       "Advertising",
       "Digital Marketing",
       "Print Marketing",
@@ -85,8 +91,6 @@ const ExpenseTracker = () => {
       "Trade Shows",
       "PR Expenses",
       "Sales Materials",
-
-      // Professional Services
       "Legal Services",
       "Accounting Services",
       "Consulting Fees",
@@ -95,8 +99,6 @@ const ExpenseTracker = () => {
       "Background Checks",
       "Payroll Services",
       "HR Services",
-
-      // Travel & Transportation
       "Business Travel",
       "Client Meetings",
       "Conference Expenses",
@@ -105,8 +107,6 @@ const ExpenseTracker = () => {
       "Parking",
       "Travel Insurance",
       "Accommodation",
-
-      // Utilities & Services
       "Electricity",
       "Water",
       "Internet",
@@ -115,8 +115,6 @@ const ExpenseTracker = () => {
       "Waste Management",
       "Security Services",
       "Insurance",
-
-      // Financial
       "Bank Charges",
       "Transaction Fees",
       "Loan Payments",
@@ -125,8 +123,6 @@ const ExpenseTracker = () => {
       "Tax Payments",
       "Financial Advisory",
       "Currency Exchange",
-
-      // Additional Business Categories
       "Research & Development",
       "Patents & Trademarks",
       "Employee Benefits",
@@ -143,9 +139,7 @@ const ExpenseTracker = () => {
       "Office Utilities",
       "Shipping & Postage",
     ],
-
     personal: [
-      // Food & Dining
       "Groceries",
       "Restaurants",
       "Fast Food",
@@ -154,8 +148,6 @@ const ExpenseTracker = () => {
       "Specialty Foods",
       "Alcohol & Bars",
       "Snacks",
-
-      // Housing
       "Rent/Mortgage",
       "Property Tax",
       "Home Insurance",
@@ -164,8 +156,6 @@ const ExpenseTracker = () => {
       "Furniture",
       "Home Decor",
       "Cleaning Supplies",
-
-      // Transportation
       "Public Transport",
       "Car Payment",
       "Car Insurance",
@@ -174,8 +164,6 @@ const ExpenseTracker = () => {
       "Parking",
       "Ride Sharing",
       "Bicycle Expenses",
-
-      // Health & Wellness
       "Health Insurance",
       "Doctor Visits",
       "Medications",
@@ -184,8 +172,6 @@ const ExpenseTracker = () => {
       "Gym Membership",
       "Sports Equipment",
       "Wellness Products",
-
-      // Entertainment
       "Movies",
       "Games",
       "Books",
@@ -194,8 +180,6 @@ const ExpenseTracker = () => {
       "Concerts",
       "Sports Events",
       "Hobbies",
-
-      // Shopping
       "Clothing",
       "Electronics",
       "Personal Care",
@@ -204,8 +188,6 @@ const ExpenseTracker = () => {
       "Apps & Software",
       "Online Subscriptions",
       "Beauty Products",
-
-      // Education
       "Tuition",
       "Books & Supplies",
       "Online Courses",
@@ -214,8 +196,6 @@ const ExpenseTracker = () => {
       "Language Learning",
       "Educational Apps",
       "School Activities",
-
-      // Additional Personal Categories
       "Pet Care",
       "Child Care",
       "Family Activities",
@@ -233,9 +213,7 @@ const ExpenseTracker = () => {
       "Legal Services",
       "Personal Gifts",
     ],
-
     daily: [
-      // Food & Beverages
       "Breakfast",
       "Lunch",
       "Dinner",
@@ -244,8 +222,6 @@ const ExpenseTracker = () => {
       "Beverages",
       "Street Food",
       "Restaurant Meals",
-
-      // Transportation
       "Bus Fare",
       "Train Fare",
       "Taxi",
@@ -254,8 +230,6 @@ const ExpenseTracker = () => {
       "Bike Sharing",
       "Car Sharing",
       "Metro Pass",
-
-      // Personal Care
       "Toiletries",
       "Hygiene Products",
       "Cosmetics",
@@ -264,8 +238,6 @@ const ExpenseTracker = () => {
       "Personal Grooming",
       "Health Supplies",
       "Medications",
-
-      // Work-Related
       "Office Lunch",
       "Work Supplies",
       "Printing",
@@ -274,8 +246,6 @@ const ExpenseTracker = () => {
       "Work Transport",
       "Work Snacks",
       "Office Equipment",
-
-      // Entertainment
       "Daily News",
       "Magazine",
       "Quick Games",
@@ -284,8 +254,6 @@ const ExpenseTracker = () => {
       "Social Activities",
       "Quick Hobbies",
       "Entertainment Apps",
-
-      // Shopping
       "Convenience Store",
       "Quick Shopping",
       "Daily Necessities",
@@ -294,8 +262,6 @@ const ExpenseTracker = () => {
       "Quick Services",
       "Impulse Buys",
       "Daily Deals",
-
-      // Miscellaneous Daily
       "Tips",
       "Small Gifts",
       "Daily Services",
@@ -304,8 +270,6 @@ const ExpenseTracker = () => {
       "ATM Fees",
       "Small Donations",
       "Daily Subscriptions",
-
-      // Additional Daily Categories
       "Daily Parking",
       "Toll Charges",
       "Quick Snacks",
@@ -319,9 +283,7 @@ const ExpenseTracker = () => {
       "Small Electronics",
       "Quick Services",
     ],
-
     full: [
-      // Combined Categories
       "Housing & Utilities",
       "Transportation",
       "Food & Dining",
@@ -342,8 +304,6 @@ const ExpenseTracker = () => {
       "Hobbies & Recreation",
       "Gifts & Donations",
       "Emergency Fund",
-
-      // Additional Full Categories
       "Savings Goals",
       "Retirement Planning",
       "Tax Payments",
@@ -367,10 +327,9 @@ const ExpenseTracker = () => {
     ],
   };
 
-  // Get filtered suggestions based on search input
   const getFilteredSuggestions = (): string[] => {
     const currentCategories =
-      expenseCategories[expenseType.split(" ")[0]] || expenseCategories.full;
+      expenseCategories[expenseTypeRaw.split(" ")[0]] || expenseCategories.full;
     if (!categorySearch) return currentCategories;
 
     return currentCategories.filter((cat) =>
@@ -378,7 +337,6 @@ const ExpenseTracker = () => {
     );
   };
 
-  // Handle category selection
   const handleCategorySelect = (selectedCategory: string) => {
     setCategory(selectedCategory);
     setCategorySearch(selectedCategory);
@@ -392,7 +350,6 @@ const ExpenseTracker = () => {
     if (storedUsername) setUsername(storedUsername);
     if (storedEmail) setUserEmail(storedEmail);
 
-    // Clear existing expenses when component mounts or expense type changes
     setExpenses([]);
     setTemporaryExpenses([]);
     setFreshStart(false);
@@ -414,14 +371,20 @@ const ExpenseTracker = () => {
         }
       );
       if (response.data.success) {
-        // Set fresh expenses from the server
-        setExpenses(response.data.expenses);
-
-        // Show the previous expense card if there are expenses
-        setShowPreviousExpenseCard(response.data.expenses.length > 0);
+        const formattedExpenses = response.data.expenses.map((expense: any) => ({
+          _id: expense._id,
+          amount: expense.amount,
+          category: expense.category,
+          description: expense.description,
+          date: expense.date,
+          userEmail: expense.userEmail,
+          expenseType: expense.expenseType,
+        }));
+        setExpenses(formattedExpenses);
+        setShowPreviousExpenseCard(formattedExpenses.length > 0);
       }
     } catch (err) {
-      console.error("Failed to fetch expenses:", (err as Error).message);
+      console.error("Failed to fetch expenses:", err);
     } finally {
       setLoading(false);
     }
@@ -433,9 +396,13 @@ const ExpenseTracker = () => {
       return;
     }
 
+    if (isNaN(parseFloat(amount))) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
     setSaveStatus("saving");
     const newExpense = {
-      id: Date.now(),
       amount: parseFloat(amount),
       category,
       description,
@@ -444,9 +411,11 @@ const ExpenseTracker = () => {
       expenseType,
     };
 
-    // If in fresh start mode, add to temporary expenses
     if (freshStart) {
-      setTemporaryExpenses([...temporaryExpenses, newExpense]);
+      setTemporaryExpenses([
+        ...temporaryExpenses,
+        { ...newExpense, _id: Date.now().toString() },
+      ]);
       setAmount("");
       setCategory("");
       setDescription("");
@@ -454,7 +423,6 @@ const ExpenseTracker = () => {
       setCategorySearch("");
       setSaveStatus("saved");
 
-      // Reset save status after 2 seconds
       setTimeout(() => {
         setSaveStatus("");
       }, 2000);
@@ -479,7 +447,6 @@ const ExpenseTracker = () => {
       );
 
       if (response.data.success) {
-        // Fetch fresh expenses instead of appending
         await fetchExpenses();
         setAmount("");
         setCategory("");
@@ -488,20 +455,20 @@ const ExpenseTracker = () => {
         setCategorySearch("");
         setSaveStatus("saved");
 
-        // Reset save status after 2 seconds
         setTimeout(() => {
           setSaveStatus("");
         }, 2000);
 
-        // If this was the first expense, hide the welcome card
         setShowPreviousExpenseCard(false);
         setShowExistingExpenses(true);
       }
-    } catch (err) {
-      console.error("Expense addition failed:", (err as Error).message);
+    } catch (err: any) {
+      console.error("Expense addition failed:", err.response?.data || err);
       setSaveStatus("error");
+      alert(
+        err.response?.data?.error || "Failed to add expense. Please try again."
+      );
 
-      // Reset save status after 2 seconds
       setTimeout(() => {
         setSaveStatus("");
       }, 2000);
@@ -515,18 +482,18 @@ const ExpenseTracker = () => {
     return expenses.reduce((total, expense) => total + expense.amount, 0);
   };
 
-  const handleDelete = async (expenseId: number) => {
+  const handleDelete = async (expenseId: string) => {
     if (!expenseId) {
-      console.error("Invalid expense ID: undefined");
+      console.error("Invalid expense ID");
       return;
     }
 
-    // If in fresh start mode, delete from temporary expenses
     if (freshStart) {
-      setTemporaryExpenses(temporaryExpenses.filter((expense) => expense.id !== expenseId));
+      setTemporaryExpenses(temporaryExpenses.filter((expense) => expense._id !== expenseId));
       return;
     }
 
+    setDeleting(true);
     try {
       const token = localStorage.getItem("token");
       const response = await axios.delete(
@@ -539,10 +506,18 @@ const ExpenseTracker = () => {
       );
 
       if (response.data.success) {
-        await fetchExpenses(); // Refresh the expense list
+        setExpenses(expenses.filter((expense) => expense._id !== expenseId));
+        alert("Expense deleted successfully!");
+      } else {
+        throw new Error(response.data.message || "Failed to delete expense");
       }
-    } catch (err) {
-      console.error("Failed to delete expense:", (err as Error).message);
+    } catch (err: any) {
+      console.error("Failed to delete expense:", err.response?.data || err);
+      alert(
+        err.response?.data?.message || "Failed to delete expense. Please try again."
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -552,7 +527,7 @@ const ExpenseTracker = () => {
       const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
 
       await axios.post(
-        "https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/analysis",
+        "https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net/api/expenses/analyze",
         {
           username,
           userEmail,
@@ -571,7 +546,8 @@ const ExpenseTracker = () => {
       );
       navigate(`/analysis/${expenseType}`);
     } catch (error) {
-      console.error("Error submitting data:", (error as Error).message);
+      console.error("Error submitting data:", error);
+      alert("Failed to submit for analysis. Please try again.");
     }
   };
 
@@ -583,18 +559,15 @@ const ExpenseTracker = () => {
     }).format(amount);
   };
 
-  // Apply filters and sorting to expenses
   const getFilteredExpenses = () => {
     const currentExpenses = freshStart ? temporaryExpenses : expenses;
 
     return currentExpenses
       .filter((expense) => {
-        // Apply category filter if selected
         if (filterCategory && expense.category !== filterCategory) {
           return false;
         }
 
-        // Apply search text filter
         if (searchText) {
           const searchLower = searchText.toLowerCase();
           return (
@@ -606,7 +579,6 @@ const ExpenseTracker = () => {
         return true;
       })
       .sort((a, b) => {
-        // Apply sorting
         switch (sortOrder) {
           case "date-asc":
             return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -622,7 +594,6 @@ const ExpenseTracker = () => {
       });
   };
 
-  // Get unique categories for filtering
   const getUniqueCategories = () => {
     const currentExpenses = freshStart ? temporaryExpenses : expenses;
     const categories = new Set<string>();
@@ -632,22 +603,18 @@ const ExpenseTracker = () => {
 
   const filteredExpenses = getFilteredExpenses();
 
-  // Calculate days between dates
   const calculateDaysBetween = (startDate: Date, endDate: Date) => {
     const differenceInTime = endDate.getTime() - startDate.getTime();
     const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-    return differenceInDays + 1; // Include both start and end days
+    return differenceInDays + 1;
   };
 
-  // Get expense summary for card display
   const getExpenseSummary = () => {
     const currentExpenses = freshStart ? temporaryExpenses : expenses;
     if (currentExpenses.length === 0) return {};
 
-    // Get total amount
     const totalAmount = currentExpenses.reduce((total, expense) => total + expense.amount, 0);
 
-    // Get most frequent category
     const categoryCount: Record<string, number> = {};
     currentExpenses.forEach((expense) => {
       categoryCount[expense.category] = (categoryCount[expense.category] || 0) + 1;
@@ -662,12 +629,10 @@ const ExpenseTracker = () => {
       }
     }
 
-    // Get date range
     const dates = currentExpenses.map((expense) => new Date(expense.date).getTime());
     const minDate = new Date(Math.min(...dates));
     const maxDate = new Date(Math.max(...dates));
 
-    // Calculate number of days
     const totalDays = calculateDaysBetween(minDate, maxDate);
 
     const formatDate = (date: Date) => {
@@ -687,7 +652,6 @@ const ExpenseTracker = () => {
     };
   };
 
-  // Export expenses as CSV
   const exportToCSV = () => {
     if (filteredExpenses.length === 0) {
       alert("No expenses to export");
@@ -700,8 +664,8 @@ const ExpenseTracker = () => {
       ...filteredExpenses.map((expense) =>
         [
           expense.date,
-          `"${expense.category}"`, // Quote categories with commas
-          `"${expense.description}"`, // Quote descriptions with commas
+          `"${expense.category}"`,
+          `"${expense.description}"`,
           expense.amount,
         ].join(",")
       ),
@@ -718,7 +682,6 @@ const ExpenseTracker = () => {
     document.body.removeChild(link);
   };
 
-  // Handle starting fresh
   const handleStartFresh = () => {
     setShowPreviousExpenseCard(false);
     setShowExistingExpenses(false);
@@ -726,7 +689,6 @@ const ExpenseTracker = () => {
     setTemporaryExpenses([]);
   };
 
-  // Get expense summary
   const summary = getExpenseSummary();
 
   return (
@@ -764,7 +726,6 @@ const ExpenseTracker = () => {
         </motion.button>
       </motion.nav>
 
-      {/* Previous Expense Summary Card */}
       {loading ? (
         <div className="loading-state" style={{ padding: "30px", textAlign: "center" }}>
           <LoadingCoin size="medium" text="Loading your expenses..." />
@@ -929,9 +890,9 @@ const ExpenseTracker = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                   >
-                    {getFilteredSuggestions().map((suggestion) => (
+                    {getFilteredSuggestions().map((suggestion, index) => (
                       <motion.div
-                        key={suggestion}
+                        key={`suggestion-${index}`}
                         className="suggestion-item"
                         onClick={() => handleCategorySelect(suggestion)}
                         whileHover={{ backgroundColor: "#f0f0f0" }}
@@ -1031,8 +992,8 @@ const ExpenseTracker = () => {
                       style={{ flex: 1 }}
                     >
                       <option value="">All Categories</option>
-                      {getUniqueCategories().map((cat) => (
-                        <option key={cat} value={cat}>
+                      {getUniqueCategories().map((cat, index) => (
+                        <option key={`category-${index}`} value={cat}>
                           {cat}
                         </option>
                       ))}
@@ -1069,7 +1030,7 @@ const ExpenseTracker = () => {
                     <tbody>
                       {filteredExpenses.map((expense, index) => (
                         <motion.tr
-                          key={expense.id}
+                          key={`expense-${expense._id}-${index}`}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
@@ -1083,7 +1044,7 @@ const ExpenseTracker = () => {
                               className="delete-button"
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => handleDelete(expense.id)}
+                              onClick={() => handleDelete(expense._id)}
                             >
                               Delete
                             </motion.button>
@@ -1142,7 +1103,6 @@ const ExpenseTracker = () => {
         </motion.div>
       )}
 
-      {/* Option to start fresh if initially chose to continue with existing */}
       {(!showPreviousExpenseCard && showExistingExpenses && expenses.length > 0) && (
         <motion.div
           style={{ textAlign: "center", margin: "20px 0" }}
@@ -1164,7 +1124,6 @@ const ExpenseTracker = () => {
             whileHover={{ scale: 1.05, backgroundColor: "rgba(79, 70, 229, 0.1)" }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
-              // Clear existing expenses (from UI only, not from database)
               setExpenses([]);
               setShowExistingExpenses(false);
             }}
@@ -1174,7 +1133,6 @@ const ExpenseTracker = () => {
         </motion.div>
       )}
 
-      {/* Option to show existing expenses if initially chose to start fresh */}
       {(!showPreviousExpenseCard && !showExistingExpenses && expenses.length > 0) && (
         <motion.div
           style={{ textAlign: "center", margin: "20px 0" }}
@@ -1196,7 +1154,6 @@ const ExpenseTracker = () => {
             whileHover={{ scale: 1.05, backgroundColor: "rgba(79, 70, 229, 0.1)" }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
-              // Fetch expenses again and show them
               fetchExpenses();
               setShowExistingExpenses(true);
             }}
@@ -1206,7 +1163,6 @@ const ExpenseTracker = () => {
         </motion.div>
       )}
 
-      {/* Chat-based expense input option */}
       {!showPreviousExpenseCard && (
         <motion.div
           className="chat-expense-option"
@@ -1265,6 +1221,12 @@ const ExpenseTracker = () => {
           </NavLink>
         </motion.div>
       )}
+
+      <FullScreenLoading
+        message="Deleting expense..."
+        coinSize="medium"
+        isLoading={deleting}
+      />
     </div>
   );
 };

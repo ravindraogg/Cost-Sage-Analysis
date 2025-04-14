@@ -5,21 +5,32 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const { Groq } = require("groq-sdk");
+const path = require("path");
+const fs = require("fs").promises;
+
 const app = express();
+
+// Request logging middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+// CORS and JSON middleware
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
+
+// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("MongoDB connection error:", err));
+
+// Schemas
 const UserSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
-  password: String, 
+  password: String,
   companyName: String,
   industry: String,
   activeToken: {
@@ -49,25 +60,49 @@ const ExpenseSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-const ChatSchema = new mongoose.Schema({
-  userEmail: String,
-  messages: [
+const messageSchema = new mongoose.Schema({
+  text: String,
+  isUser: Boolean,
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+  model: String,
+  attachments: [
     {
-      text: String,
-      isUser: Boolean,
-      timestamp: { type: Date, default: Date.now },
-      model: String,
+      name: { type: String, required: true },
+      type: { type: String, required: true },
+      size: { type: Number, required: true },
+      url: { type: String, required: true },
     },
   ],
-  createdAt: { type: Date, default: Date.now },
 });
 
+const chatSchema = new mongoose.Schema({
+  userEmail: {
+    type: String,
+    required: true,
+    index: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  messages: [messageSchema],
+});
+
+// Models
 const User = mongoose.model("User", UserSchema);
 const Expense = mongoose.model("Expense", ExpenseSchema);
-const Chat = mongoose.model("Chat", ChatSchema);
+const Chat = mongoose.model("Chat", chatSchema);
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key";
 
+// JWT functions
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email, name: user.name },
@@ -80,9 +115,6 @@ const verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
-  console.log("Authorization Header:", authHeader); 
-  console.log("Token:", token); 
-
   if (!token) {
     console.log("No token provided");
     return res.status(401).json({ success: false, message: "No token provided" });
@@ -90,7 +122,6 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log("Decoded token:", decoded); 
     const user = await User.findById(decoded.id);
     if (!user) {
       console.log("User not found for ID:", decoded.id);
@@ -107,11 +138,12 @@ const verifyToken = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    console.error("Token verification failed:", err.message); 
+    console.error("Token verification failed:", err.message);
     return res.status(403).json({ success: false, message: "Invalid token", error: err.message });
   }
 };
 
+// Authentication routes
 app.post("/api/register", async (req, res) => {
   try {
     const { name, email, password, companyName, industry } = req.body;
@@ -202,6 +234,7 @@ app.get("/api/auth-status", verifyToken, (req, res) => {
   });
 });
 
+// Expense routes
 app.post("/api/expenses", verifyToken, async (req, res) => {
   try {
     const { expenses, expenseType } = req.body;
@@ -294,123 +327,116 @@ app.get("/api/expenses/analysis/:expenseType", verifyToken, async (req, res) => 
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-const messageSchema = new mongoose.Schema({
-    text: String,
-    isUser: Boolean,
-    timestamp: {
-      type: Date,
-      default: Date.now
-    },
-    model: String
-  });
-  
-  const chatSchema = new mongoose.Schema({
-    userEmail: {
-      type: String,
-      required: true,
-      index: true
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now
-    },
-    messages: [messageSchema]
-  });
-  
-  app.get('/api/chats/:userEmail', async (req, res) => {
-    try {
-      const { userEmail } = req.params;
-      
-      const chats = await Chat.find({ userEmail })
-        .sort({ updatedAt: -1 }) // Sort by last updated, newest first
-        .exec();
-      
-      res.json(chats);
-    } catch (error) {
-      console.error('Error fetching chats:', error);
-      res.status(500).json({ error: 'Failed to fetch chats' });
+
+// Chat routes
+app.get("/api/chats/:userEmail", verifyToken, async (req, res) => {
+  try {
+    const { userEmail } = req.params;
+    if (userEmail !== req.user.email) {
+      return res.status(403).json({ error: "Unauthorized" });
     }
-  });
-  
-  // Create a new chat with initial message
-  app.post('/api/chats/new', async (req, res) => {
-    try {
-      const { userEmail, initialMessage, model } = req.body;
-      
-      if (!userEmail || !initialMessage) {
-        return res.status(400).json({ error: 'userEmail and initialMessage are required' });
-      }
-      
-      // Create a new chat with the initial user message
-      const newChat = new Chat({
-        userEmail,
-        updatedAt: new Date(),
-        messages: [{
+    const chats = await Chat.find({ userEmail })
+      .sort({ updatedAt: -1 })
+      .exec();
+    res.json(chats);
+  } catch (error) {
+    console.error("Error fetching chats:", error);
+    res.status(500).json({ error: "Failed to fetch chats" });
+  }
+});
+
+app.post("/api/chats/new", verifyToken, async (req, res) => {
+  try {
+    const { userEmail, initialMessage, model, attachments } = req.body;
+
+    if (!userEmail || !initialMessage) {
+      return res.status(400).json({ error: "userEmail and initialMessage are required" });
+    }
+    if (userEmail !== req.user.email) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const newChat = new Chat({
+      userEmail,
+      updatedAt: new Date(),
+      messages: [
+        {
           text: initialMessage,
           isUser: true,
           timestamp: new Date(),
-          model: model || 'default'
-        }]
-      });
-      
-      await newChat.save();
-      
-      res.status(201).json({
-        message: 'New chat created successfully',
-        chatId: newChat._id
-      });
-    } catch (error) {
-      console.error('Error creating new chat:', error);
-      res.status(500).json({ error: 'Failed to create new chat' });
+          model: model || "default",
+          attachments: attachments || [],
+        },
+      ],
+    });
+
+    await newChat.save();
+
+    res.status(201).json({
+      message: "New chat created successfully",
+      chatId: newChat._id,
+    });
+  } catch (error) {
+    console.error("Error creating new chat:", error);
+    res.status(500).json({ error: "Failed to create new chat" });
+  }
+});
+
+app.post("/api/chats/:chatId/messages", verifyToken, async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { message, isUser, model, attachments } = req.body;
+
+    console.log("Received message data:", { message, isUser, model, attachments }); // Debug log
+
+    if (!message) {
+      return res.status(400).json({ error: "Message content is required" });
     }
-  });
-  
-  // Add a message to an existing chat
-  app.post('/api/chats/:chatId/messages', async (req, res) => {
-    try {
-      const { chatId } = req.params;
-      const { message, isUser, model } = req.body;
-      
-      if (!message) {
-        return res.status(400).json({ error: 'Message content is required' });
-      }
-      
-      // Find the chat and update it with the new message
-      const chat = await Chat.findById(chatId);
-      
-      if (!chat) {
-        return res.status(404).json({ error: 'Chat not found' });
-      }
-      
-      // Add the new message
-      chat.messages.push({
-        text: message,
-        isUser: isUser,
-        timestamp: new Date(),
-        model: model || 'default'
-      });
-      
-      // Update the 'updatedAt' timestamp
-      chat.updatedAt = new Date();
-      
-      await chat.save();
-      
-      res.status(200).json({
-        message: 'Message added successfully',
-        chatId: chat._id
-      });
-    } catch (error) {
-      console.error('Error adding message to chat:', error);
-      res.status(500).json({ error: 'Failed to add message to chat' });
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ error: "Chat not found" });
     }
-  })
+    if (chat.userEmail !== req.user.email) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    // Sanitize attachments
+    const sanitizedAttachments = Array.isArray(attachments)
+      ? attachments
+          .filter((att) => att && typeof att === 'object') // Ensure it's an object
+          .map((att) => ({
+            name: String(att.name || ""),
+            type: String(att.type || ""),
+            size: Number(att.size) || 0,
+            url: String(att.url || ""),
+          }))
+          .filter((att) => att.name && att.type && att.url) // Require non-empty fields
+      : [];
+
+    chat.messages.push({
+      text: message,
+      isUser,
+      timestamp: new Date(),
+      model: model || "default",
+      attachments: sanitizedAttachments,
+    });
+
+    chat.updatedAt = new Date();
+    await chat.save();
+
+    res.status(200).json({
+      message: "Message added successfully",
+      chatId: chat._id,
+    });
+  } catch (error) {
+    console.error("Error adding message to chat:", error);
+    res.status(500).json({ error: "Failed to add message to chat" });
+  }
+});
+
 app.post("/api/insights", verifyToken, async (req, res) => {
   try {
-    console.log("Received /api/insights request:", req.body);
     const { expenseType, categories, amounts } = req.body;
 
     if (!expenseType || !categories || !amounts || !Array.isArray(categories) || !Array.isArray(amounts)) {
@@ -457,40 +483,19 @@ Amounts: ${amounts.join(", ")}`;
   }
 });
 
-app.get("/api/chats/:userEmail", async (req, res) => {
-  try {
-    const chats = await Chat.find({ userEmail: req.params.userEmail });
-    res.json(chats);
-  } catch (error) {
-    console.error("Error fetching chats:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch chats" });
-  }
-});
-
-app.post("/api/chats", async (req, res) => {
-  try {
-    const { userEmail, message, isUser, model } = req.body;
-    let chat = await Chat.findOne({ userEmail });
-
-    if (!chat) {
-      chat = new Chat({ userEmail, messages: [] });
-    }
-
-    chat.messages.push({ text: message, isUser, model });
-    await chat.save();
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Error saving chat:", error);
-    res.status(500).json({ success: false, message: "Failed to save chat" });
-  }
-});
-
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", verifyToken, async (req, res) => {
   try {
     const { messages, model } = req.body;
+
+    // Clean messages to include only role and content for Groq
+    const cleanedMessages = messages.map(({ role, content }) => ({
+      role,
+      content,
+    }));
+
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const response = await groq.chat.completions.create({
-      messages,
+      messages: cleanedMessages,
       model: model || "llama-3.1-8b-instant",
     });
     res.json(response.choices[0].message);
@@ -500,17 +505,51 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-app.post("/api/upload", upload.single("file"), (req, res) => {
-  res.json({ message: "File uploaded successfully", filename: req.file.originalname });
+// File upload configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, `${uniqueSuffix}-${file.originalname}`);
+  },
 });
 
+const upload = multer({ storage });
+
+// Create uploads directory
+const uploadsDir = path.join(__dirname, "uploads");
+fs.mkdir(uploadsDir, { recursive: true }).catch(console.error);
+
+// Serve static files
+app.use("/uploads", express.static(uploadsDir));
+
+app.post("/api/upload", verifyToken, upload.single("file"), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+    const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    res.json({
+      message: "File uploaded successfully",
+      fileUrl,
+      filename: req.file.originalname,
+      type: req.file.mimetype,
+      size: req.file.size,
+    });
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    res.status(500).json({ success: false, message: "Failed to upload file" });
+  }
+});
+
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(`[${new Date().toISOString()}] Error: ${err.message}`);
   res.status(500).json({ success: false, message: "Internal server error" });
 });
 
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

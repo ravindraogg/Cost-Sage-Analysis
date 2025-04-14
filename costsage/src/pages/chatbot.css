@@ -163,8 +163,32 @@
   color: #2563eb;
   
 }
-.chat-icons{
- width : 50px 
+.chat-icons {
+  width: 50px;
+  background-color: transparent;
+}
+.home-nav-button {
+  background-color: white; /* Blue base */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.home-nav-button:hover {
+  background-color: white; 
+}
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 .navbar-right {
   display: flex;
@@ -213,7 +237,118 @@
   max-width: 28rem;
   
 }
+/* Add these styles to your chatbot.css file */
 
+/* File upload styles */
+.uploaded-files-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+}
+
+.uploaded-file {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.file-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-size {
+  color: #6c757d;
+  font-size: 11px;
+}
+
+.remove-file-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 2px;
+  color: #6c757d;
+}
+
+.remove-file-btn:hover {
+  color: #dc3545;
+}
+
+/* Attachment display in messages */
+.attachments-container {
+  margin-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.attachment-name {
+  font-weight: 500;
+}
+
+.attachment-size {
+  color: #6c757d;
+  font-size: 11px;
+}
+
+/* Upload status indicator */
+.upload-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
+.upload-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Adjust existing styles */
+.input-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-wrapper {
+  margin-top: 0;
+}
+
+.hidden {
+  display: none;
+}
 .chat-icon {
   width: 5rem;
   height: 5rem;
@@ -378,4 +513,233 @@
   background-color: #d1d5db;
   color: #6b7280;
   cursor: not-allowed;
+}
+/* Spinner for loading states */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ccc;
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading history */
+.loading-history {
+  display: flex;
+  align-items: center;
+  color: #666;
+  font-style: italic;
+}
+
+/* Delete chat button */
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.history-item:hover {
+  background-color: #f5f5f5;
+}
+
+.history-item-selected {
+  background-color: #e6f0ff;
+}
+
+.history-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-date {
+  font-size: 0.8em;
+  color: #888;
+  margin-left: 8px;
+}
+
+.delete-chat-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ff4d4f;
+  padding: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.history-item:hover .delete-chat-button {
+  opacity: 1;
+}
+
+.delete-chat-button:hover {
+  color: #d9363e;
+}
+
+.delete-chat-button:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Processing message in chat area */
+.processing-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-style: italic;
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin: 8px auto;
+  width: fit-content;
+}
+/* Add these styles to your chatbot.css file */
+
+/* Message formatting styles */
+.message-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.message-content p {
+  margin: 0 0 8px 0;
+}
+
+.message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.message-content .list-item,
+.message-content .bullet-item {
+  margin: 4px 0;
+  padding-left: 8px;
+}
+
+/* Wait indicator styles */
+.waiting-response {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.processing-bubble {
+  min-height: 32px;
+  padding: 8px 16px;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 20px;
+}
+
+.typing-indicator .dot {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  background-color: #aaa;
+  margin: 0 2px;
+  animation: bounce 1.3s linear infinite;
+}
+
+.typing-indicator .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Add these styles to your chatbot.css file */
+
+/* Mic button active state */
+.icon-button.mic-active {
+  color: #ff3e00;
+  background-color: rgba(255, 62, 0, 0.1);
+}
+
+/* Transcribing status */
+.transcribing-status {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 120, 212, 0.08);
+  padding: 6px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #444;
+}
+
+.transcribing-status .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top-color: #0078d4;
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: spin 1s linear infinite;
+}
+
+/* Model selector changes */
+.model-selector {
+  min-width: 180px; /* Give more space for the longer model names */
+}
+
+/* Style for whisper model option */
+.model-selector option[value="whisper-large-v3"] {
+  color: #ff3e00;
+  font-weight: 500;
+}
+
+/* Tooltip for voice button */
+.icon-button[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 100;
+  margin-bottom: 5px;
+}
+
+.icon-button {
+  position: relative;
 }
