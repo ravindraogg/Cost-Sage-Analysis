@@ -1,348 +1,307 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { PlusCircle, Menu, Paperclip, Mic, Send } from 'lucide-react';
 import './chatbot.css';
-import axios from 'axios';
 
-axios.defaults.baseURL = 'https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net';
+interface Message {
+  text: string;
+  isUser: boolean;
+  timestamp?: string;
+  model?: string;
+}
 
-const CostSageChatbot: React.FC = () => {
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; model: string; timestamp: string }>>([]);
+interface Chat {
+  _id: string;
+  userEmail: string;
+  messages: Message[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function CostSageChatbot() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inputText, setInputText] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('llama-3.1-8b-instant');
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const [chatHistory, setChatHistory] = useState<Array<{ id: string; title: string; date: string }>>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isFirstPrompt, setIsFirstPrompt] = useState(true);
   const [iconPlayed, setIconPlayed] = useState(false);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [isLoadingChats, setIsLoadingChats] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState('llama-3.1-8b-instant');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
-  const userEmail = localStorage.getItem('userEmail') || 'guest@example.com';
+
+  // Get user info from localStorage
   const username = localStorage.getItem('username') || 'User';
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+
+  // Backend base URL
+  const API_BASE_URL = 'https://backedncostsage-g3exe0b2gwc0fba8.canadacentral-01.azurewebsites.net'; // Matches backend port
 
   // Get greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
-  // Available Groq models
-  const groqModels = [
-    'llama-3.1-8b-instant',
-    'llama-3.3-70b-versatile',
-    'mixtral-8x7b-32768',
-  ];
-
-  // Fetch chat history
+  // Fetch chats for the user
   useEffect(() => {
-    const fetchChatHistory = async () => {
+    const fetchChats = async () => {
+      setIsLoadingChats(true);
+      setErrorMessage(null);
       try {
-        const response = await axios.get(`/api/chats/${userEmail}`);
-        const data = Array.isArray(response.data) ? response.data : [];
-        const chats = data.map((chat: any) => ({
-          id: chat._id,
-          title: chat.messages[0]?.text.slice(0, 30) || 'Untitled Chat',
-          date: new Date(chat.createdAt).toLocaleDateString(),
-        }));
-        setChatHistory(chats);
-      } catch (error) {
-        console.error('Failed to fetch chat history:', error);
-        setChatHistory([]);
+        const response = await fetch(`${API_BASE_URL}/api/chats/${encodeURIComponent(userEmail)}`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText.slice(0, 100)}...`);
+        }
+
+        const data: Chat[] = await response.json();
+        console.log('Fetched chats:', data);
+        setChats(data);
+      } catch (error: any) {
+        console.error('Error fetching chats:', error);
+        setErrorMessage(`Failed to load chats: ${error.message}`);
+        setChats([]);
+      } finally {
+        setIsLoadingChats(false);
       }
     };
-    fetchChatHistory();
+
+    if (userEmail) {
+      fetchChats();
+    } else {
+      setErrorMessage('No user email provided');
+      setIsLoadingChats(false);
+    }
   }, [userEmail]);
+
+  // Load messages for the selected chat
+  useEffect(() => {
+    if (selectedChatId) {
+      const selectedChat = chats.find((chat) => chat._id === selectedChatId);
+      if (selectedChat) {
+        setMessages(selectedChat.messages);
+        setIsWelcomeVisible(false);
+      }
+    } else {
+      setMessages([]);
+      setIsWelcomeVisible(true);
+    }
+  }, [selectedChatId, chats]);
 
   // Handle chat icon animation
   useEffect(() => {
     if (isFirstPrompt && !iconPlayed) {
       const timer = setTimeout(() => {
         setIconPlayed(true);
-      }, 3000); // Animation plays for 3 seconds
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [isFirstPrompt, iconPlayed]);
-
-  // Load a specific chat
-  const loadChat = async (chatId: string) => {
-    try {
-      const response = await axios.get(`/api/chats/${userEmail}/${chatId}`);
-      const chatData = response.data;
-      if (chatData && Array.isArray(chatData.messages)) {
-        const formattedMessages = chatData.messages.map((msg: any) => ({
-          text: msg.message,
-          isUser: msg.isUser,
-          model: msg.model,
-          timestamp: msg.timestamp || new Date().toISOString(),
-        }));
-        setMessages(formattedMessages);
-        setIsWelcomeVisible(false);
-        setIsFirstPrompt(false);
-      }
-    } catch (error) {
-      console.error('Failed to load chat:', error);
-    }
-  };
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window) {
-      recognitionRef.current = new (window as any).webkitSpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText(transcript);
-        setIsRecording(false);
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        setIsRecording(false);
-      };
-    }
-  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setSelectedChatId(null);
+    setIsWelcomeVisible(true);
+    setIsFirstPrompt(true);
+    setIconPlayed(false);
+    setErrorMessage(null);
+  };
+
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
-    const newMessage = {
+    const userMessage: Message = {
       text: inputText,
       isUser: true,
-      model: selectedModel,
       timestamp: new Date().toISOString(),
+      model: selectedModel,
     };
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
-    setInputText('');
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInputText(''); // Clear input
     setIsWelcomeVisible(false);
-    if (isFirstPrompt) {
-      setIsFirstPrompt(false);
-    }
+    setIsFirstPrompt(false);
+    setErrorMessage(null);
 
-    // Save user message to MongoDB
     try {
-      await axios.post('/api/chats', {
-        userEmail,
-        message: inputText,
-        isUser: true,
-        model: selectedModel,
-      });
-    } catch (error) {
-      console.error('Failed to save user message:', error);
-    }
+      let currentChatId = selectedChatId;
 
-    // Call Groq API
-    try {
-      const response = await axios.post('/api/chat', {
-        messages: updatedMessages.map(msg => ({
-          role: msg.isUser ? 'user' : 'assistant',
-          content: msg.text,
-        })),
-        model: selectedModel,
-      });
+      // Create a new chat if none is selected
+      if (!currentChatId) {
+        const newChatResponse = await fetch(`${API_BASE_URL}/api/chats/new`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userEmail,
+            initialMessage: inputText,
+            model: selectedModel,
+          }),
+        });
+        if (!newChatResponse.ok) {
+          const errorText = await newChatResponse.text();
+          throw new Error(`Failed to create new chat: HTTP ${newChatResponse.status}: ${errorText.slice(0, 100)}...`);
+        }
+        const newChatData = await newChatResponse.json();
+        currentChatId = newChatData.chatId;
+        setSelectedChatId(currentChatId);
+      } else {
+        // Add user message to existing chat
+        const saveUserResponse = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: inputText,
+            isUser: true,
+            model: selectedModel,
+          }),
+        });
+        if (!saveUserResponse.ok) {
+          const errorText = await saveUserResponse.text();
+          throw new Error(`Failed to save user message: HTTP ${saveUserResponse.status}: ${errorText.slice(0, 100)}...`);
+        }
+      }
 
-      const botMessage = {
-        text: response.data.content,
+      // Get AI response
+      const aiResponse = await fetch(`${API_BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map((msg) => ({
+            role: msg.isUser ? 'user' : 'assistant',
+            content: msg.text,
+          })),
+          model: selectedModel,
+        }),
+      });
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        throw new Error(`Failed to get AI response: HTTP ${aiResponse.status}: ${errorText.slice(0, 100)}...`);
+      }
+      const aiData = await aiResponse.json();
+
+      const botMessage: Message = {
+        text: aiData.content,
         isUser: false,
-        model: selectedModel,
         timestamp: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, botMessage]);
-
-      // Save bot response to MongoDB
-      await axios.post('/api/chats', {
-        userEmail,
-        message: botMessage.text,
-        isUser: false,
         model: selectedModel,
-      });
-    } catch (error) {
-      console.error('Failed to get Groq response:', error);
-      setMessages(prev => [
-        ...prev,
-        {
-          text: 'Sorry, something went wrong. Please try again.',
+      };
+
+      // Save bot message
+      const saveBotResponse = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: aiData.content,
           isUser: false,
           model: selectedModel,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
+        }),
+      });
+      if (!saveBotResponse.ok) {
+        const errorText = await saveBotResponse.text();
+        throw new Error(`Failed to save bot message: HTTP ${saveBotResponse.status}: ${errorText.slice(0, 100)}...`);
+      }
+
+      // Update messages and refresh chats
+      setMessages((prev) => [...prev, botMessage]);
+      const updatedChats = await fetch(`${API_BASE_URL}/api/chats/${encodeURIComponent(userEmail)}`).then((res) => {
+        if (!res.ok) throw new Error(`Failed to refresh chats: HTTP ${res.status}`);
+        return res.json();
+      });
+      setChats(updatedChats);
+    } catch (error: any) {
+      console.error('Error in chat:', error);
+      setErrorMessage(`Chat error: ${error.message}`);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  const handleVoiceInput = () => {
-    if (!isRecording) {
-      if (recognitionRef.current) {
-        recognitionRef.current.start();
-        setIsRecording(true);
-      } else {
-        alert('Speech recognition not supported in your browser');
+  const handleChatSelect = (chatId: string) => {
+    setSelectedChatId(chatId);
+    setIsFirstPrompt(false);
+    setErrorMessage(null);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`File upload failed: HTTP ${response.status}: ${errorText.slice(0, 100)}...`);
       }
-    } else {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
+      const data = await response.json();
+      alert(data.message);
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      setErrorMessage(`File upload error: ${error.message}`);
     }
-  };
 
-  const handleImageUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const formData = new FormData();
-      formData.append('file', e.target.files[0]);
-
-      try {
-        const response = await axios.post('/api/upload', formData);
-        const newMessages = [
-          ...messages,
-          {
-            text: `[File uploaded: ${response.data.filename}]`,
-            isUser: true,
-            model: selectedModel,
-            timestamp: new Date().toISOString(),
-          },
-          {
-            text: 'Ive processed your file. How can I assist further?',
-            isUser: false,
-            model: selectedModel,
-            timestamp: new Date().toISOString(),
-          },
-        ];
-        setMessages(newMessages);
-        setIsWelcomeVisible(false);
-        if (isFirstPrompt) {
-          setIsFirstPrompt(false);
-        }
-
-        // Save to MongoDB
-        await axios.post('/api/chats', {
-          userEmail,
-          message: `[File uploaded: ${response.data.filename}]`,
-          isUser: true,
-          model: selectedModel,
-        });
-        await axios.post('/api/chats', {
-          userEmail,
-          message: 'Ive processed your file. How can I assist further?',
-          isUser: false,
-          model: selectedModel,
-        });
-      } catch (error) {
-        console.error('File upload failed:', error);
-      }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        const response = await axios.post('/api/upload', formData);
-        const newMessages = [
-          ...messages,
-          {
-            text: `[File uploaded: ${response.data.filename}]`,
-            isUser: true,
-            model: selectedModel,
-            timestamp: new Date().toISOString(),
-          },
-          {
-            text: 'Ive processed your file. How can I assist further?',
-            isUser: false,
-            model: selectedModel,
-            timestamp: new Date().toISOString(),
-          },
-        ];
-        setMessages(newMessages);
-        setIsWelcomeVisible(false);
-        if (isFirstPrompt) {
-          setIsFirstPrompt(false);
-        }
-
-        // Save to MongoDB
-        await axios.post('/api/chats', {
-          userEmail,
-          message: `[File uploaded: ${response.data.filename}]`,
-          isUser: true,
-          model: selectedModel,
-        });
-        await axios.post('/api/chats', {
-          userEmail,
-          message: 'Ive processed your file. How can I assist further?',
-          isUser: false,
-          model: selectedModel,
-        });
-      } catch (error) {
-        console.error('File upload failed:', error);
-      }
-    }
-  };
-
-  const handleNewChat = () => {
-    setMessages([]);
-    setIsWelcomeVisible(true);
-    setIsFirstPrompt(true);
-    setIconPlayed(false);
-  };
-  
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
   };
 
   return (
-    <div className="page-container">
-      <div className={`sidebar ${sidebarOpen ? '' : 'closed'}`}>
+    <div className="app-container">
+      {/* Sidebar */}
+      <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <div className="sidebar-header">
           <button onClick={handleNewChat} className="new-chat-button">
-            <span>+</span> New Chat
+            <PlusCircle size={18} />
+            <span>New Chat</span>
           </button>
         </div>
-        <div className="chat-history">
-          <h3>History</h3>
-          {chatHistory.length ? (
+
+        <div className="sidebar-content">
+          <h3 className="sidebar-history-title">History</h3>
+          {errorMessage && <p className="error-message">{errorMessage}</p>}
+          {isLoadingChats ? (
+            <p className="loading-history">Loading history...</p>
+          ) : chats.length ? (
             <ul>
-              {chatHistory.map(chat => (
+              {chats.map((chat) => (
                 <li
-                  key={chat.id}
-                  className="chat-item"
-                  onClick={() => loadChat(chat.id)}
+                  key={chat._id}
+                  className={`history-item ${selectedChatId === chat._id ? 'history-item-selected' : ''}`}
+                  onClick={() => handleChatSelect(chat._id)}
                 >
-                  <span className="chat-title">{chat.title}</span>
-                  <span className="chat-date">{chat.date}</span>
+                  <span className="history-title">
+                    {chat.messages.find((m) => m.isUser)?.text?.slice(0, 20) || 'Untitled Chat'}
+                  </span>
+                  <span className="history-date">
+                    {new Date(chat.updatedAt).toLocaleDateString()}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -351,73 +310,76 @@ const CostSageChatbot: React.FC = () => {
           )}
         </div>
       </div>
-      <div className="chatbot-container">
+
+      {/* Main Content */}
+      <div className="main-content">
+        {/* Navbar */}
         <nav className="navbar">
-          <div className="nav-left">
+          <div className="navbar-left">
             <button onClick={toggleSidebar} className="menu-button">
-              ☰
+              <Menu size={22} />
             </button>
-            <span className="website-name">Cost-Sage</span>
+            <span className="app-title">Cost-Sage</span>
+            <img src="/assets/chat-icon.gif" alt="Chat Icons" className="chat-icons" />
           </div>
-          <div className="header-controls">
-            <div className="model-selector">
+
+          <div className="navbar-right">
+            <div className="model-selector-container">
               <select
+                className="model-selector"
                 value={selectedModel}
-                onChange={e => setSelectedModel(e.target.value)}
+                onChange={(e) => setSelectedModel(e.target.value)}
               >
-                {groqModels.map(model => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
+                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
               </select>
             </div>
           </div>
         </nav>
-        <div
-          className={`content-container ${isDragging ? 'drag-active' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          ref={messagesContainerRef}
-        >
-          {isDragging && (
-            <div className="drag-overlay">
-              <span className="drag-icon">📁</span>
-              <p className="drag-text">Drop your file here</p>
-            </div>
-          )}
-          {isWelcomeVisible && isFirstPrompt && (
+
+        {/* Content Area */}
+        <div className="chat-container">
+          {/* Welcome dialog */}
+          {isWelcomeVisible && isFirstPrompt && messages.length === 0 && (
             <div className="welcome-dialog">
               {!iconPlayed && (
-                <img
-                  src="/assets/chat-icon.gif"
-                  alt="Chat Icon"
-                  className="chat-icon"
-                />
+                <img src="/assets/chat-icon.gif" alt="Chat Icon" className="chat-icon" />
               )}
-              <h1>{getGreeting()}, {username}!</h1>
-              <p>
+              <h1 className="welcome-title">
+                {getGreeting()}, {username}!
+              </h1>
+              <p className="welcome-text">
                 How can I help you with your cost analysis today?
               </p>
-              <button onClick={() => setIsWelcomeVisible(false)}>Start Chatting</button>
             </div>
           )}
-          <div className={`messages-container ${isFirstPrompt && isWelcomeVisible ? 'centered' : ''}`}>
+
+          {/* Messages */}
+          <div className="messages-container">
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`message ${msg.isUser ? 'user-message' : 'bot-message'}`}
+                className={`message ${msg.isUser ? 'message-user' : 'message-bot'}`}
               >
                 {!msg.isUser && (
-                  <div className="avatar-container">
-                    <div className="avatar">AI</div>
+                  <div className="bot-avatar">
+                    <span>AI</span>
                   </div>
                 )}
-                <div className={`message-content ${msg.isUser ? '' : 'bot-response'}`}>
-                  {msg.text}
-                  <div className="message-timestamp">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
+                <div className={`message-bubble ${msg.isUser ? 'bubble-user' : 'bubble-bot'}`}>
+                  <p>{msg.text}</p>
+                  <div
+                    className={`message-timestamp ${
+                      msg.isUser ? 'timestamp-user' : 'timestamp-bot'
+                    }`}
+                  >
+                    {msg.timestamp
+                      ? new Date(msg.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'Just now'}
                   </div>
                 </div>
               </div>
@@ -425,50 +387,46 @@ const CostSageChatbot: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
         </div>
-        <div className={`input-area ${isFirstPrompt && isWelcomeVisible ? 'centered-input' : ''}`}>
-          <div className="input-card">
+
+        {/* Input Area */}
+        <div className="input-container">
+          <div className="input-wrapper">
             <button
-              onClick={handleImageUpload}
-              className="action-button upload-button"
-              title="Upload File"
+              className="icon-button"
+              onClick={() => fileInputRef.current?.click()}
             >
-              <span>📎</span>
+              <Paperclip size={20} />
             </button>
             <input
               type="file"
-              accept="image/*,.pdf"
-              className="file-input"
+              className="hidden"
               ref={fileInputRef}
-              onChange={handleFileChange}
+              onChange={handleFileUpload}
             />
+
             <textarea
+              className="input-textarea"
               placeholder="Ask about your costs..."
               value={inputText}
-              onChange={e => setInputText(e.target.value)}
+              onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="text-input"
               rows={1}
             />
-            <button
-              onClick={handleVoiceInput}
-              className={`action-button ${isRecording ? 'voice-button recording' : 'voice-button'}`}
-              title="Voice Input"
-            >
-              <span>🎤</span>
+
+            <button className="icon-button">
+              <Mic size={20} />
             </button>
+
             <button
+              className={`send-button ${inputText.trim() ? 'send-active' : 'send-disabled'}`}
               onClick={handleSendMessage}
-              className={`action-button send-button ${!inputText.trim() ? 'disabled' : ''}`}
-              title="Send Message"
               disabled={!inputText.trim()}
             >
-              <span>➤</span>
+              <Send size={18} />
             </button>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default CostSageChatbot;
+}

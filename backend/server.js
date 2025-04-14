@@ -294,7 +294,120 @@ app.get("/api/expenses/analysis/:expenseType", verifyToken, async (req, res) => 
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
+const messageSchema = new mongoose.Schema({
+    text: String,
+    isUser: Boolean,
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    model: String
+  });
+  
+  const chatSchema = new mongoose.Schema({
+    userEmail: {
+      type: String,
+      required: true,
+      index: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    },
+    messages: [messageSchema]
+  });
+  
+  app.get('/api/chats/:userEmail', async (req, res) => {
+    try {
+      const { userEmail } = req.params;
+      
+      const chats = await Chat.find({ userEmail })
+        .sort({ updatedAt: -1 }) // Sort by last updated, newest first
+        .exec();
+      
+      res.json(chats);
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+      res.status(500).json({ error: 'Failed to fetch chats' });
+    }
+  });
+  
+  // Create a new chat with initial message
+  app.post('/api/chats/new', async (req, res) => {
+    try {
+      const { userEmail, initialMessage, model } = req.body;
+      
+      if (!userEmail || !initialMessage) {
+        return res.status(400).json({ error: 'userEmail and initialMessage are required' });
+      }
+      
+      // Create a new chat with the initial user message
+      const newChat = new Chat({
+        userEmail,
+        updatedAt: new Date(),
+        messages: [{
+          text: initialMessage,
+          isUser: true,
+          timestamp: new Date(),
+          model: model || 'default'
+        }]
+      });
+      
+      await newChat.save();
+      
+      res.status(201).json({
+        message: 'New chat created successfully',
+        chatId: newChat._id
+      });
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+      res.status(500).json({ error: 'Failed to create new chat' });
+    }
+  });
+  
+  // Add a message to an existing chat
+  app.post('/api/chats/:chatId/messages', async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const { message, isUser, model } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: 'Message content is required' });
+      }
+      
+      // Find the chat and update it with the new message
+      const chat = await Chat.findById(chatId);
+      
+      if (!chat) {
+        return res.status(404).json({ error: 'Chat not found' });
+      }
+      
+      // Add the new message
+      chat.messages.push({
+        text: message,
+        isUser: isUser,
+        timestamp: new Date(),
+        model: model || 'default'
+      });
+      
+      // Update the 'updatedAt' timestamp
+      chat.updatedAt = new Date();
+      
+      await chat.save();
+      
+      res.status(200).json({
+        message: 'Message added successfully',
+        chatId: chat._id
+      });
+    } catch (error) {
+      console.error('Error adding message to chat:', error);
+      res.status(500).json({ error: 'Failed to add message to chat' });
+    }
+  })
 app.post("/api/insights", verifyToken, async (req, res) => {
   try {
     console.log("Received /api/insights request:", req.body);
