@@ -1,6 +1,6 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import "./expense.css";
+import "./Expense.css";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import LoadingCoin from "./LoadingCoin";
