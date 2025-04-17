@@ -16,6 +16,7 @@ import {
 } from "chart.js";
 import LoadingCoin from "./LoadingCoin";
 import "./AnalysisPage.css";
+
 const base = import.meta.env.VITE_BASE_URL;
 
 Chart.register(
@@ -72,9 +73,7 @@ const AnalysisPage = () => {
         }
 
         const response = await axios.get(
-          `${base}/api/expenses/analysis/${encodeURIComponent(
-            expenseType
-          )}`,
+          `${base}/api/expenses/analysis/${encodeURIComponent(expenseType)}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -168,6 +167,24 @@ const AnalysisPage = () => {
     } finally {
       setInsightsLoading(false);
     }
+  };
+
+  // Function to parse Markdown-like bold text (**text**)
+  const parseInsightText = (text: string): JSX.Element => {
+    // Split text by ** to identify bold sections
+    const parts = text.split(/\*\*(.*?)\*\*/g);
+    return (
+      <>
+        {parts.map((part, index) => {
+          // Odd-indexed parts are bold (captured by the regex group)
+          if (index % 2 === 1) {
+            return <strong key={index}>{part}</strong>;
+          }
+          // Even-indexed parts are regular text
+          return <span key={index}>{part}</span>;
+        })}
+      </>
+    );
   };
 
   // Generate random colors for each category
@@ -351,16 +368,21 @@ const AnalysisPage = () => {
                     const isNumbered = /^\d+\./.test(insight);
                     if (isNumbered) {
                       const [number, ...rest] = insight.split(".");
+                      const insightText = rest.join(".").trim();
                       return (
                         <div key={index} className="insight-point">
                           <span className="insight-number">{number}.</span>
-                          <span className="insight-text">{rest.join(".").trim()}</span>
+                          <span className="insight-text">
+                            {parseInsightText(insightText)}
+                          </span>
                         </div>
                       );
                     }
                     return (
                       <div key={index} className="insight-point">
-                        <span className="insight-text">{insight}</span>
+                        <span className="insight-text">
+                          {parseInsightText(insight)}
+                        </span>
                       </div>
                     );
                   })}
