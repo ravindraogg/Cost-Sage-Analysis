@@ -1,4 +1,3 @@
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGithub,
@@ -7,11 +6,14 @@ import {
 } from "@fortawesome/free-brands-svg-icons";
 import "./AboutUs.css"; // Import the CSS file
 
+// Import images
+import ravindraImage from "/assets/ravindra.jpg";
+import niteshImage from "/assets/nitesh.jpg";
+import fallbackImage from "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s";
+
 const AboutUs = () => {
   return (
-    
     <div className="about-us-container">
-      
       <h1>About Us</h1>
       <p className="about-description">
         We are a passionate team of developers dedicated to building innovative
@@ -24,11 +26,11 @@ const AboutUs = () => {
         {/* Team Member 1 */}
         <div className="team-member">
           <img
-            src="/assets/ravindra.jpg"
+            src={ravindraImage}
             alt="Ravindra S"
             className="profile-pic"
             onError={(e) => {
-              e.currentTarget.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"; // Fallback image
+              e.currentTarget.src = fallbackImage; // Fallback image
             }}
           />
           <h2>Ravindra S</h2>
@@ -66,11 +68,11 @@ const AboutUs = () => {
         {/* Team Member 2 */}
         <div className="team-member">
           <img
-            src="/assets/nitesh.jpg"
+            src={niteshImage}
             alt="Nitesh Reddy"
             className="profile-pic"
             onError={(e) => {
-              e.currentTarget.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"; // Fallback image
+              e.currentTarget.src = fallbackImage; // Fallback image
             }}
           />
           <h2>Nitesh Reddy</h2>
@@ -103,13 +105,15 @@ const AboutUs = () => {
             </a>
           </div>
         </div>
+
+        {/* Team Member 3 */}
         <div className="team-member">
           <img
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"
-            alt="Ravindra S"
+            src={fallbackImage}
+            alt="Masood"
             className="profile-pic"
             onError={(e) => {
-              e.currentTarget.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"; // Fallback image
+              e.currentTarget.src = fallbackImage; // Fallback image
             }}
           />
           <h2>Masood</h2>
@@ -121,21 +125,21 @@ const AboutUs = () => {
           </p>
           <div className="social-links">
             <a
-              href="https://github.com"
+              href="https://github.com" // Replace with actual GitHub link
               target="_blank"
               rel="noopener noreferrer"
             >
               <FontAwesomeIcon icon={faGithub} />
             </a>
             <a
-              href="https://X.com/"
+              href="https://x.com/" // Replace with actual X/Twitter link
               target="_blank"
               rel="noopener noreferrer"
             >
               <FontAwesomeIcon icon={faTwitter} />
             </a>
             <a
-              href="https://linkedin.com"
+              href="https://linkedin.com" // Replace with actual LinkedIn link
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -143,13 +147,15 @@ const AboutUs = () => {
             </a>
           </div>
         </div>
+
+        {/* Team Member 4 */}
         <div className="team-member">
           <img
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"
-            alt="Ravindra S"
+            src={fallbackImage}
+            alt="Mithun"
             className="profile-pic"
             onError={(e) => {
-              e.currentTarget.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"; // Fallback image
+              e.currentTarget.src = fallbackImage; // Fallback image
             }}
           />
           <h2>Mithun</h2>
@@ -161,21 +167,21 @@ const AboutUs = () => {
           </p>
           <div className="social-links">
             <a
-              href="https://github.com"
+              href="https://github.com" // Replace with actual GitHub link
               target="_blank"
               rel="noopener noreferrer"
             >
               <FontAwesomeIcon icon={faGithub} />
             </a>
             <a
-              href="https://X.com"
+              href="https://x.com" // Replace with actual X/Twitter link
               target="_blank"
               rel="noopener noreferrer"
             >
               <FontAwesomeIcon icon={faTwitter} />
             </a>
             <a
-              href="https://linkedin.com"
+              href="https://linkedin.com" // Replace with actual LinkedIn link
               target="_blank"
               rel="noopener noreferrer"
             >
