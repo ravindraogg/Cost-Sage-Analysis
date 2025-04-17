@@ -9,7 +9,9 @@ import "./AboutUs.css"; // Import the CSS file
 // Import images
 import ravindraImage from "/assets/ravindra.jpg";
 import niteshImage from "/assets/nitesh.jpg";
-import fallbackImage from "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s";
+
+// Define fallback image URL as a string constant
+const fallbackImage = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s";
 
 const AboutUs = () => {
   return (
