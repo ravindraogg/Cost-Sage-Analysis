@@ -521,55 +521,81 @@ const ExpenseTracker = () => {
     }
   };
 
-  const submitForAnalysis = async (expenseType: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("Please log in to continue");
-        navigate("/login");
-        return;
-      }
-  
-      const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
-      if (expensesToAnalyze.length === 0) {
-        alert("No expenses available to analyze");
-        return;
-      }
-  
-      // Format expenseType to match server enum (space-separated)
-      const formattedExpenseType = expenseType.toLowerCase().replace(/-/g, " ");
-      console.log("Submitting data:", {
+const submitForAnalysis = async (expenseType: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in to continue");
+      navigate("/login");
+      return;
+    }
+
+    const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
+    if (expensesToAnalyze.length === 0) {
+      alert("No expenses available to analyze");
+      return;
+    }
+
+    const formattedExpenseType = expenseType.toLowerCase().replace(/-/g, " ");
+    console.log("Submitting data:", {
+      username,
+      userEmail,
+      expenseType: formattedExpenseType,
+      expenses: expensesToAnalyze, // Log the full expenses array
+    });
+
+    // Validate expenses
+    const validExpenses = expensesToAnalyze.filter(
+      (expense) =>
+        expense.amount &&
+        typeof expense.amount === "number" &&
+        expense.amount > 0 &&
+        expense.category &&
+        expense.description &&
+        expense.date &&
+        /^\d{4}-\d{2}-\d{2}$/.test(expense.date) &&
+        expense.userEmail &&
+        expense.expenseType
+    );
+    if (validExpenses.length === 0) {
+      alert("No valid expenses to analyze");
+      return;
+    }
+
+    const response = await axios.post(
+      `${base}/api/expenses/analyze`,
+      {
         username,
         userEmail,
         expenseType: formattedExpenseType,
-        expenses: expensesToAnalyze,
-      });
-  
-      await axios.post(
-        `${base}/api/expenses/analyze`,
-        {
-          username,
+        expenses: validExpenses.map((expense) => ({
+          amount: expense.amount,
+          category: expense.category,
+          description: expense.description,
+          date: expense.date,
           userEmail,
           expenseType: formattedExpenseType,
-          expenses: expensesToAnalyze.map((expense) => ({
-            ...expense,
-            userEmail,
-            expenseType: formattedExpenseType,
-          })),
+        })),
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      // Navigate with hyphenated format for URL consistency
-      navigate(`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`);
-    } catch (error: any) {
-      console.error("Error submitting data:", error.response?.data || error.message);
-      alert("Failed to submit expenses for analysis. Please try again.");
-    }
-  };
+      }
+    );
+
+    console.log("Analysis response:", response.data);
+    navigate(`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`);
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || "Unknown error";
+    console.error("Error submitting data:", {
+      message: errorMessage,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    alert(`Failed to submit expenses for analysis: ${errorMessage}`);
+  }
+};
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
