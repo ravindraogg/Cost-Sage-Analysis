@@ -547,7 +547,6 @@ const ExpenseTracker = () => {
       navigate(`/analysis/${expenseType}`);
     } catch (error) {
       console.error("Error submitting data:", error);
-      alert("Failed to submit for analysis. Please try again.");
     }
   };
 
