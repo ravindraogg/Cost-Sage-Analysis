@@ -28,7 +28,7 @@ const AboutUs = () => {
             alt="Ravindra S"
             className="profile-pic"
             onError={(e) => {
-              e.currentTarget.src = "https://via.placeholder.com/150"; // Fallback image
+              e.currentTarget.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"; // Fallback image
             }}
           />
           <h2>Ravindra S</h2>
@@ -70,7 +70,7 @@ const AboutUs = () => {
             alt="Nitesh Reddy"
             className="profile-pic"
             onError={(e) => {
-              e.currentTarget.src = "https://via.placeholder.com/150"; // Fallback image
+              e.currentTarget.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"; // Fallback image
             }}
           />
           <h2>Nitesh Reddy</h2>
@@ -105,11 +105,11 @@ const AboutUs = () => {
         </div>
         <div className="team-member">
           <img
-            src="https://via.placeholder.com/150"
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"
             alt="Ravindra S"
             className="profile-pic"
             onError={(e) => {
-              e.currentTarget.src = "https://via.placeholder.com/150"; // Fallback image
+              e.currentTarget.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"; // Fallback image
             }}
           />
           <h2>Masood</h2>
@@ -145,11 +145,11 @@ const AboutUs = () => {
         </div>
         <div className="team-member">
           <img
-            src="https://via.placeholder.com/150"
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"
             alt="Ravindra S"
             className="profile-pic"
             onError={(e) => {
-              e.currentTarget.src = "https://via.placeholder.com/150"; // Fallback image
+              e.currentTarget.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL_JlCFnIGX5omgjEjgV9F3sBRq14eTERK9w&s"; // Fallback image
             }}
           />
           <h2>Mithun</h2>
