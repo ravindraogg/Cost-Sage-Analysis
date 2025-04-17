@@ -52,10 +52,10 @@ const ExpenseTracker = () => {
     .toLowerCase();
 
   const expenseTypeMap: { [key: string]: string } = {
-    "business expense": "business expense tracker",
-    "personal expense": "personal expense tracker",
-    "daily expense": "daily expense tracker",
-    "full expense": "full expense tracker",
+    "business expense tracker": "business expense tracker",
+    "personal expense tracker": "personal expense tracker",
+    "daily expense tracker": "daily expense tracker",
+    "full expense tracker": "full expense tracker",
     "other expenses": "other expenses",
   };
 
@@ -524,18 +524,37 @@ const ExpenseTracker = () => {
   const submitForAnalysis = async (expenseType: string) => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please log in to continue");
+        navigate("/login");
+        return;
+      }
+  
       const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
-
+      if (expensesToAnalyze.length === 0) {
+        alert("No expenses available to analyze");
+        return;
+      }
+  
+      // Format expenseType to match server enum (space-separated)
+      const formattedExpenseType = expenseType.toLowerCase().replace(/-/g, " ");
+      console.log("Submitting data:", {
+        username,
+        userEmail,
+        expenseType: formattedExpenseType,
+        expenses: expensesToAnalyze,
+      });
+  
       await axios.post(
         `${base}/api/expenses/analyze`,
         {
           username,
           userEmail,
-          expenseType,
+          expenseType: formattedExpenseType,
           expenses: expensesToAnalyze.map((expense) => ({
             ...expense,
             userEmail,
-            expenseType,
+            expenseType: formattedExpenseType,
           })),
         },
         {
@@ -544,9 +563,11 @@ const ExpenseTracker = () => {
           },
         }
       );
-      navigate(`/analysis/${expenseType}`);
-    } catch (error) {
-      console.error("Error submitting data:", error);
+      // Navigate with hyphenated format for URL consistency
+      navigate(`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`);
+    } catch (error: any) {
+      console.error("Error submitting data:", error.response?.data || error.message);
+      alert("Failed to submit expenses for analysis. Please try again.");
     }
   };
 
@@ -582,7 +603,7 @@ const ExpenseTracker = () => {
           case "date-asc":
             return new Date(a.date).getTime() - new Date(b.date).getTime();
           case "date-desc":
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
+            return new Date(b.date).getTime() - new Date(b.date).getTime();
           case "amount-asc":
             return a.amount - b.amount;
           case "amount-desc":
@@ -1088,7 +1109,7 @@ const ExpenseTracker = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <NavLink to={`/analysis/${expenseType}`}>
+          <NavLink to={`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`}>
             <motion.button
               className="analysis-button"
               whileHover={{ scale: 1.05 }}
