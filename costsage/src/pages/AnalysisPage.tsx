@@ -16,6 +16,7 @@ import {
 } from "chart.js";
 import LoadingCoin from "./LoadingCoin";
 import "./AnalysisPage.css";
+import type { JSX } from "react";
 
 const base = import.meta.env.VITE_BASE_URL;
 
@@ -147,7 +148,7 @@ const AnalysisPage = () => {
         const cleanedInsights = response.data.insights
           .filter((insight: string) => insight.trim() && /^\d+\./.test(insight))
           .map((insight: string) => insight.trim());
-        
+
         setInsights(
           cleanedInsights.length > 0
             ? cleanedInsights
