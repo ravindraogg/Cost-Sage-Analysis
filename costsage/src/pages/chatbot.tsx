@@ -1,8 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PlusCircle, Menu, Paperclip, Mic, Send, X, Trash2, Home  } from 'lucide-react';
+import { PlusCircle, Menu, Paperclip, Mic, Send, X, Trash2, Home } from 'lucide-react';
 import './chatbot.css';
 import { useNavigate } from 'react-router-dom';
+import Papa from 'papaparse';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import ChatbotImage from './../../assets/chat-icon.gif';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
 const base = import.meta.env.VITE_BASE_URL;
+
+interface FileAttachment {
+  name: string;
+  type: string;
+  size: number;
+  url?: string;
+  content?: string;
+  parsedData?: any[];
+}
+
+interface GraphData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    borderColor: string;
+    backgroundColor: string;
+  }[];
+}
 
 interface Message {
   text: string;
@@ -10,13 +36,7 @@ interface Message {
   timestamp?: string;
   model?: string;
   attachments?: FileAttachment[];
-}
-
-interface FileAttachment {
-  name: string;
-  type: string;
-  size: number;
-  url?: string;
+  graph?: GraphData;
 }
 
 interface Chat {
@@ -47,14 +67,10 @@ export default function CostSageChatbot() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Get user info from localStorage
   const username = localStorage.getItem('username') || 'User';
   const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
-
-  // Backend base URL
   const API_BASE_URL = base;
 
-  // Get greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -76,8 +92,12 @@ export default function CostSageChatbot() {
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errorText.slice(0, 100)}...`);
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error || `HTTP ${response.status}: Failed to fetch chats`;
+          if (response.status === 0) {
+            throw new Error("CORS error: Server did not respond with proper CORS headers. Check server or Azure CORS settings.");
+          }
+          throw new Error(errorMessage);
         }
 
         const data: Chat[] = await response.json();
@@ -100,7 +120,6 @@ export default function CostSageChatbot() {
     }
   }, [userEmail]);
 
-  // Load messages for the selected chat
   useEffect(() => {
     if (selectedChatId) {
       const selectedChat = chats.find((chat) => chat._id === selectedChatId);
@@ -114,7 +133,6 @@ export default function CostSageChatbot() {
     }
   }, [selectedChatId, chats]);
 
-  // Handle chat icon animation
   useEffect(() => {
     if (isFirstPrompt && !iconPlayed) {
       const timer = setTimeout(() => {
@@ -124,7 +142,6 @@ export default function CostSageChatbot() {
     }
   }, [isFirstPrompt, iconPlayed]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, waitingForResponse]);
@@ -156,17 +173,17 @@ export default function CostSageChatbot() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to delete chat: HTTP ${response.status}: ${errorText.slice(0, 100)}...`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: Failed to delete chat`;
+        throw new Error(errorMessage);
       }
 
-      // Refresh chats
       const updatedChats = await fetch(`${API_BASE_URL}/api/chats/${encodeURIComponent(userEmail)}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       }).then((res) => {
-        if (!res.ok) throw new Error(`Failed to refresh chats: HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch updated chats`);
         return res.json();
       });
 
@@ -190,29 +207,184 @@ export default function CostSageChatbot() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  // Function to format message text for proper display
   const formatMessageText = (text: string): React.ReactNode => {
-    // Split text by newlines and create an array of elements
     const lines = text.split('\n');
-    
     return lines.map((line, index) => {
-      // Handle numbered list items (1., 2., etc.)
       if (/^\d+\.\s/.test(line)) {
         return <div key={index} className="list-item">{line}</div>;
-      }
-      // Handle bullet points
-      else if (/^[-•*]\s/.test(line)) {
+      } else if (/^[-•*]\s/.test(line)) {
         return <div key={index} className="bullet-item">{line}</div>;
-      }
-      // Empty lines
-      else if (!line.trim()) {
+      } else if (!line.trim()) {
         return <br key={index} />;
-      }
-      // Regular paragraph
-      else {
+      } else {
         return <p key={index}>{line}</p>;
       }
     });
+  };
+
+  // Improved graph data generation function
+  const generateGraphData = (csvData: any[], prompt: string): GraphData | null => {
+    if (!csvData || csvData.length === 0 || !Array.isArray(csvData)) {
+      console.error("Invalid CSV data:", csvData);
+      return null;
+    }
+
+    try {
+      console.log("CSV Data received:", csvData);
+      
+      // Make sure we have valid objects with properties
+      if (!csvData[0] || typeof csvData[0] !== 'object') {
+        console.error("CSV data does not contain valid objects");
+        return null;
+      }
+
+      // Find columns suitable for plotting
+      const headers = Object.keys(csvData[0]);
+      if (headers.length < 1) {
+        console.error("CSV data has no headers");
+        return null;
+      }
+
+      console.log("CSV Headers:", headers);
+
+      // Default to first column as label
+      let labelColumn = headers[0];
+      
+      // Look for numeric columns - prioritize columns with numeric values
+      let valueColumns: string[] = [];
+      
+      headers.forEach(header => {
+        // Check if this column contains numeric values
+        const hasNumericValues = csvData.some(row => {
+          const val = row[header];
+          return typeof val === 'number' || 
+                 (typeof val === 'string' && !isNaN(parseFloat(val)) && val.trim() !== '');
+        });
+        
+        if (hasNumericValues) {
+          valueColumns.push(header);
+        }
+      });
+      
+      console.log("Potential value columns:", valueColumns);
+      
+      if (valueColumns.length === 0) {
+        console.error("No numeric columns found in CSV data");
+        return null;
+      }
+
+      // Try to intelligently select label and value columns based on the prompt
+      const promptLower = prompt.toLowerCase();
+      
+      // Check if prompt mentions any specific columns
+      headers.forEach(header => {
+        const headerLower = header.toLowerCase();
+        if (promptLower.includes(headerLower)) {
+          // If this header is mentioned and we have numeric columns, use it as label
+          if (valueColumns.includes(header)) {
+            // This column has numeric values but is specifically mentioned,
+            // so we'll try to use another numeric column for values
+            const otherValueColumn = valueColumns.find(col => col !== header);
+            if (otherValueColumn) {
+              labelColumn = header;
+              valueColumns = [otherValueColumn];
+            }
+          } else {
+            // Non-numeric column mentioned in prompt - use as label
+            labelColumn = header;
+          }
+        }
+      });
+      
+      // Check for keywords like "against", "versus", "vs", "by" in the prompt
+      const comparisonTerms = ["against", "versus", "vs", "by", "over", "compare", "plot", "chart", "graph"];
+      comparisonTerms.forEach(term => {
+        if (promptLower.includes(term)) {
+          const words = promptLower.split(/\s+/);
+          const termIndex = words.findIndex(w => w === term);
+          
+          if (termIndex > 0 && termIndex < words.length - 1) {
+            const beforeTerm = words[termIndex - 1];
+            const afterTerm = words[termIndex + 1];
+            
+            // Look for headers that match these terms
+            headers.forEach(header => {
+              const headerLower = header.toLowerCase();
+              if (headerLower.includes(beforeTerm)) {
+                if (valueColumns.includes(header)) {
+                  valueColumns = [header];
+                } else {
+                  labelColumn = header;
+                }
+              }
+              if (headerLower.includes(afterTerm)) {
+                if (valueColumns.includes(header)) {
+                  valueColumns = [header];
+                } else {
+                  labelColumn = header;
+                }
+              }
+            });
+          }
+        }
+      });
+      
+      // Choose the first value column if we have multiple
+      const valueColumn = valueColumns[0];
+      
+      console.log(`Selected label column: ${labelColumn}, value column: ${valueColumn}`);
+
+      // Create labels and data arrays
+      const labels = csvData.map(row => String(row[labelColumn] || ""));
+      
+      const values = csvData.map(row => {
+        const val = row[valueColumn];
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') {
+          // Handle currency strings or other formatted numbers
+          const cleanValue = val.replace(/[$,£€\s]/g, '');
+          return parseFloat(cleanValue) || 0;
+        }
+        return 0;
+      });
+      
+      console.log("Generated labels:", labels);
+      console.log("Generated values:", values);
+
+      // Generate a color based on the value column name
+      const getColorForColumn = (columnName: string) => {
+        // Simple hash function to generate a consistent color
+        let hash = 0;
+        for (let i = 0; i < columnName.length; i++) {
+          hash = columnName.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        // Convert to RGB
+        const r = (hash & 0xFF) % 200 + 55; // Keep it not too dark
+        const g = ((hash >> 8) & 0xFF) % 200 + 55;
+        const b = ((hash >> 16) & 0xFF) % 200 + 55;
+        
+        return `rgba(${r}, ${g}, ${b}, 1)`;
+      };
+      
+      const borderColor = getColorForColumn(valueColumn);
+      const backgroundColor = borderColor.replace('1)', '0.2)');
+
+      return {
+        labels,
+        datasets: [
+          {
+            label: valueColumn,
+            data: values,
+            borderColor,
+            backgroundColor,
+          },
+        ],
+      };
+    } catch (error) {
+      console.error("Error generating graph data:", error);
+      return null;
+    }
   };
 
   const handleSendMessage = async () => {
@@ -237,8 +409,13 @@ export default function CostSageChatbot() {
 
     try {
       let currentChatId = selectedChatId;
+      let botMessage: Message = {
+        text: '',
+        isUser: false,
+        timestamp: new Date().toISOString(),
+        model: selectedModel,
+      };
 
-      // Create a new chat if none is selected
       if (!currentChatId) {
         const newChatResponse = await fetch(`${API_BASE_URL}/api/chats/new`, {
           method: 'POST',
@@ -254,14 +431,13 @@ export default function CostSageChatbot() {
           }),
         });
         if (!newChatResponse.ok) {
-          const errorText = await newChatResponse.text();
-          throw new Error(`Failed to create new chat: HTTP ${newChatResponse.status}: ${errorText.slice(0, 100)}...`);
+          const errorData = await newChatResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${newChatResponse.status}: Failed to create new chat`);
         }
         const newChatData = await newChatResponse.json();
         currentChatId = newChatData.chatId;
         setSelectedChatId(currentChatId);
       } else {
-        // Add user message to existing chat
         const saveUserResponse = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/messages`, {
           method: 'POST',
           headers: {
@@ -276,12 +452,22 @@ export default function CostSageChatbot() {
           }),
         });
         if (!saveUserResponse.ok) {
-          const errorText = await saveUserResponse.text();
-          throw new Error(`Failed to save user message: HTTP ${saveUserResponse.status}: ${errorText.slice(0, 100)}...`);
+          const errorData = await saveUserResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${saveUserResponse.status}: Failed to save user message`);
         }
       }
 
-      // Get AI response
+      // Check for CSV and graph generation
+      // Assume CSV files should always be visualized
+      const csvFile = userMessage.attachments?.find((file) => file.type === 'text/csv');
+      let graphData: GraphData | null = null;
+      
+      if (csvFile && csvFile.parsedData) {
+        console.log("Found CSV file:", csvFile.name);
+        console.log("CSV data:", csvFile.parsedData);
+        graphData = generateGraphData(csvFile.parsedData, userMessage.text);
+      }
+
       const aiResponse = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
@@ -292,22 +478,28 @@ export default function CostSageChatbot() {
           messages: [...messages, userMessage].map((msg) => ({
             role: msg.isUser ? 'user' : 'assistant',
             content: msg.text,
+            attachments: msg.attachments,
           })),
           model: selectedModel,
         }),
       });
-      if (!aiResponse.ok) {
-        const errorText = await aiResponse.text();
-        throw new Error(`Failed to get AI response: HTTP ${aiResponse.status}: ${errorText.slice(0, 100)}...`);
-      }
-      const aiData = await aiResponse.json();
 
-      const botMessage: Message = {
-        text: aiData.content,
-        isUser: false,
-        timestamp: new Date().toISOString(),
-        model: selectedModel,
-      };
+      if (!aiResponse.ok) {
+        const errorData = await aiResponse.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${aiResponse.status}: Failed to get AI response`;
+        if (aiResponse.status === 0) {
+          throw new Error("CORS error: Server did not respond with proper CORS headers. Check server or Azure CORS settings.");
+        }
+        throw new Error(errorMessage);
+      }
+
+      const aiData = await aiResponse.json();
+      botMessage.text = aiData.content;
+
+      if (graphData) {
+        botMessage.text = `Here's the analysis of your CSV data:\n${botMessage.text}\n\nVisualized below:`;
+        botMessage.graph = graphData;
+      }
 
       // Save bot message
       const saveBotResponse = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/messages`, {
@@ -317,31 +509,31 @@ export default function CostSageChatbot() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          message: aiData.content,
+          message: botMessage.text,
           isUser: false,
           model: selectedModel,
+          graph: botMessage.graph,
         }),
       });
       if (!saveBotResponse.ok) {
-        const errorText = await saveBotResponse.text();
-        throw new Error(`Failed to save bot message: HTTP ${saveBotResponse.status}: ${errorText.slice(0, 100)}...`);
+        const errorData = await saveBotResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${saveBotResponse.status}: Failed to save bot message`);
       }
 
-      // Update messages and refresh chats
       setMessages((prev) => [...prev, botMessage]);
       const updatedChats = await fetch(`${API_BASE_URL}/api/chats/${encodeURIComponent(userEmail)}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       }).then((res) => {
-        if (!res.ok) throw new Error(`Failed to refresh chats: HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch updated chats`);
         return res.json();
       });
       setChats(updatedChats);
     } catch (error: any) {
       console.error('Error in chat:', error);
-      setErrorMessage('Failed to send message. Please try again.');
-      setMessages((prev) => prev.filter((_, i) => i !== prev.length - 1)); // Remove failed message
+      setErrorMessage(`Failed to send message: ${error.message}`);
+      setMessages((prev) => prev.filter((_, i) => i !== prev.length - 1));
     } finally {
       setIsProcessing(false);
       setWaitingForResponse(false);
@@ -362,46 +554,119 @@ export default function CostSageChatbot() {
     setUploadedFiles([]);
   };
 
+  // Improved file upload handler with better CSV parsing
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-  
+
     setIsUploading(true);
     setErrorMessage(null);
-  
+
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const formData = new FormData();
         formData.append('file', file);
-  
-        const response = await fetch(`${API_BASE_URL}/api/upload`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: formData,
-        });
-  
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`File upload failed: HTTP ${response.status}: ${errorText.slice(0, 100)}...`);
+
+        // For CSV files, handle parsing on client-side first
+        if (file.type === 'text/csv') {
+          console.log("Processing CSV file:", file.name);
+          
+          const parsedData = await new Promise<any[]>((resolve, reject) => {
+            Papa.parse(file, {
+              header: true,
+              dynamicTyping: true, // Automatically convert numeric values
+              skipEmptyLines: true,
+              complete: (result: Papa.ParseResult<any>) => {
+              if (result.errors && result.errors.length > 0) {
+                console.warn("CSV parsing had errors:", result.errors);
+              }
+              console.log("CSV parsing complete:", result.data);
+              // Filter out rows that are completely empty or contain only empty strings
+              const filteredData = result.data.filter((row: any) => {
+                if (!row || typeof row !== 'object') return false;
+                return Object.values(row).some(val => val !== "" && val !== null && val !== undefined);
+              });
+              resolve(filteredData);
+              },
+              error: (error: any) => {
+              console.error("CSV parsing error:", error);
+              reject(new Error(`CSV parsing error: ${error.message}`));
+              }
+            });
+          });
+
+          console.log("Parsed CSV data:", parsedData);
+          
+          // Continue with upload
+          const response = await fetch(`${API_BASE_URL}/api/upload`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.error || `HTTP ${response.status}: Failed to upload file`;
+            if (response.status === 0) {
+              throw new Error("CORS error: Server did not respond with proper CORS headers. Check server or Azure CORS settings.");
+            }
+            throw new Error(errorMessage);
+          }
+
+          const data = await response.json();
+          if (!data.fileUrl || !data.filename || !data.type || !data.size) {
+            throw new Error('Invalid upload response: missing required fields');
+          }
+
+          setUploadedFiles((prev) => [
+            ...prev,
+            {
+              name: data.filename,
+              type: data.type,
+              size: Number(data.size),
+              url: data.fileUrl,
+              content: data.content,
+              parsedData: parsedData
+            },
+          ]);
+        } else {
+          // Handle non-CSV files
+          const response = await fetch(`${API_BASE_URL}/api/upload`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.error || `HTTP ${response.status}: Failed to upload file`;
+            if (response.status === 0) {
+              throw new Error("CORS error: Server did not respond with proper CORS headers. Check server or Azure CORS settings.");
+            }
+            throw new Error(errorMessage);
+          }
+
+          const data = await response.json();
+          if (!data.fileUrl || !data.filename || !data.type || !data.size) {
+            throw new Error('Invalid upload response: missing required fields');
+          }
+
+          setUploadedFiles((prev) => [
+            ...prev,
+            {
+              name: data.filename,
+              type: data.type,
+              size: Number(data.size),
+              url: data.fileUrl,
+              content: data.content,
+            },
+          ]);
         }
-  
-        const data = await response.json();
-        // Validate response data
-        if (!data.fileUrl || !data.filename || !data.type || !data.size) {
-          throw new Error('Invalid upload response: missing required fields');
-        }
-        setUploadedFiles((prev) => [
-          ...prev,
-          {
-            name: data.filename,
-            type: data.type,
-            size: Number(data.size), // Ensure size is a number
-            url: data.fileUrl,
-          },
-        ]);
       }
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -413,167 +678,16 @@ export default function CostSageChatbot() {
       }
     }
   };
-  
-  // const handleSendMessage = async () => {
-  //   if (!inputText.trim() && uploadedFiles.length === 0) return;
-  
-  //   // Validate attachments
-  //   const validAttachments = uploadedFiles.filter(
-  //     (file) => file.name && file.type && file.url && typeof file.size === 'number' && !isNaN(file.size)
-  //   );
-  //   if (uploadedFiles.length > 0 && validAttachments.length === 0) {
-  //     setErrorMessage('No valid attachments to send');
-  //     return;
-  //   }
-  
-  //   const userMessage: Message = {
-  //     text: inputText || 'Sent attachment',
-  //     isUser: true,
-  //     timestamp: new Date().toISOString(),
-  //     model: selectedModel,
-  //     attachments: validAttachments.length > 0 ? [...validAttachments] : undefined,
-  //   };
-  
-  //   setMessages((prev) => [...prev, userMessage]);
-  //   setInputText('');
-  //   setUploadedFiles([]);
-  //   setIsWelcomeVisible(false);
-  //   setIsFirstPrompt(false);
-  //   setErrorMessage(null);
-  //   setIsProcessing(true);
-  
-  //   try {
-  //     let currentChatId = selectedChatId;
-  
-  //     // Create a new chat if none is selected
-  //     if (!currentChatId) {
-  //       const newChatResponse = await fetch(`${API_BASE_URL}/api/chats/new`, {
-  //         method: 'POST',
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-  //         },
-  //         body: JSON.stringify({
-  //           userEmail,
-  //           initialMessage: userMessage.text,
-  //           model: selectedModel,
-  //           attachments: userMessage.attachments,
-  //         }),
-  //       });
-  //       if (!newChatResponse.ok) {
-  //         const errorText = await newChatResponse.text();
-  //         throw new Error(`Failed to create new chat: HTTP ${newChatResponse.status}: ${errorText.slice(0, 100)}...`);
-  //       }
-  //       const newChatData = await newChatResponse.json();
-  //       currentChatId = newChatData.chatId;
-  //       setSelectedChatId(currentChatId);
-  //     } else {
-  //       // Add user message to existing chat
-  //       const saveUserResponse = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/messages`, {
-  //         method: 'POST',
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-  //         },
-  //         body: JSON.stringify({
-  //           message: userMessage.text,
-  //           isUser: true,
-  //           model: selectedModel,
-  //           attachments: userMessage.attachments,
-  //         }),
-  //       });
-  //       if (!saveUserResponse.ok) {
-  //         const errorText = await saveUserResponse.text();
-  //         throw new Error(`Failed to save user message: HTTP ${saveUserResponse.status}: ${errorText.slice(0, 100)}...`);
-  //       }
-  //     }
-  
-  //     // Get AI response
-  //     const aiResponse = await fetch(`${API_BASE_URL}/api/chat`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-  //       },
-  //       body: JSON.stringify({
-  //         messages: [...messages, userMessage].map((msg) => ({
-  //           role: msg.isUser ? 'user' : 'assistant',
-  //           content: msg.text,
-  //         })),
-  //         model: selectedModel,
-  //       }),
-  //     });
-  //     if (!aiResponse.ok) {
-  //       const errorText = await aiResponse.text();
-  //       throw new Error(`Failed to get AI response: HTTP ${aiResponse.status}: ${errorText.slice(0, 100)}...`);
-  //     }
-  //     const aiData = await aiResponse.json();
-  
-  //     const botMessage: Message = {
-  //       text: aiData.content,
-  //       isUser: false,
-  //       timestamp: new Date().toISOString(),
-  //       model: selectedModel,
-  //     };
-  
-  //     // Save bot message
-  //     const saveBotResponse = await fetch(`${API_BASE_URL}/api/chats/${currentChatId}/messages`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-  //       },
-  //       body: JSON.stringify({
-  //         message: aiData.content,
-  //         isUser: false,
-  //         model: selectedModel,
-  //       }),
-  //     });
-  //     if (!saveBotResponse.ok) {
-  //       const errorText = await saveBotResponse.text();
-  //       throw new Error(`Failed to save bot message: HTTP ${saveUserResponse.status}: ${errorText.slice(0, 100)}...`);
-  //     }
-  
-  //     // Update messages and refresh chats
-  //     setMessages((prev) => [...prev, botMessage]);
-  //     const updatedChats = await fetch(`${API_BASE_URL}/api/chats/${encodeURIComponent(userEmail)}`, {
-  //       headers: {
-  //         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-  //       },
-  //     }).then((res) => {
-  //       if (!res.ok) throw new Error(`Failed to refresh chats: HTTP ${res.status}`);
-  //       return res.json();
-  //     });
-  //     setChats(updatedChats);
-  //   } catch (error: any) {
-  //     console.error('Error in chat:', error);
-  //     setErrorMessage('Failed to send message. Please try again.');
-  //     setMessages((prev) => prev.filter((_, i) => i !== prev.length - 1)); // Remove failed message
-  //   } finally {
-  //     setIsProcessing(false);
-  //   }
-  // };
 
   const handleVoiceTranscription = async () => {
-    // This is a placeholder for the voice transcription functionality
-    // You would need to implement audio recording and send it to the Whisper API endpoint
-    
     try {
       setIsTranscribing(true);
       setErrorMessage(null);
-      
-      // Here you would:
-      // 1. Record audio using the Web Audio API or a library
-      // 2. Send the audio to your backend for processing with Whisper
-      // 3. Get the transcription back and set it as input text
-      
-      // Simulate a delay for recording and processing
+
       setTimeout(() => {
-        // This would be replaced with actual transcription result from Whisper
-        setInputText("under development.");
+        setInputText("Voice transcription under development.");
         setIsTranscribing(false);
       }, 2000);
-      
     } catch (error: any) {
       console.error('Error in voice transcription:', error);
       setErrorMessage(`Transcription error: ${error.message}`);
@@ -587,7 +701,6 @@ export default function CostSageChatbot() {
 
   return (
     <div className="app-container">
-      {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <div className="sidebar-header">
           <button onClick={handleNewChat} className="new-chat-button">
@@ -636,27 +749,23 @@ export default function CostSageChatbot() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="main-content">
-        {/* Navbar */}
         <nav className="navbar">
-        <div className="navbar-left">
-  <button onClick={toggleSidebar} className="menu-button">
-    <Menu size={22} />
-  </button>
-  <button
-    className="home-nav-button"
-    onClick={() => navigate('/dashboard')}
-    title="Go to Dashboard"
-    style={{ color: 'blue', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-  >
-    <Home size={18} />
-  </button>
-  <span className="app-title">Cost-Sage</span>
-  <img src="/assets/chat-icon.gif" alt="Chat Icons" className="chat-icons" />
-</div>
-
-
+          <div className="navbar-left">
+            <button onClick={toggleSidebar} className="menu-button">
+              <Menu size={22} />
+            </button>
+            <button
+              className="home-nav-button"
+              onClick={() => navigate('/dashboard')}
+              title="Go to Dashboard"
+              style={{ color: 'blue', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+            >
+              <Home size={18} />
+            </button>
+            <span className="app-title">Cost-Sage</span>
+            <img src={ChatbotImage} alt="Chat Icons" className="chat-icons" />
+          </div>
 
           <div className="navbar-right">
             <div className="model-selector-container">
@@ -668,30 +777,27 @@ export default function CostSageChatbot() {
                 <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
                 <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
                 <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
-                <option value="whisper-large-v3">distil-whisper-large-v3-en</option>
+                <option value="gemma2-9b-it">gemma2-9b-it</option>
               </select>
             </div>
           </div>
         </nav>
 
-        {/* Content Area */}
         <div className="chat-container">
-          {/* Welcome dialog */}
           {isWelcomeVisible && isFirstPrompt && messages.length === 0 && (
             <div className="welcome-dialog">
               {!iconPlayed && (
-                <img src="/assets/chat-icon.gif" alt="Chat Icon" className="chat-icon" />
+                <img src={ChatbotImage} alt="Chat Icon" className="chat-icon" />
               )}
               <h1 className="welcome-title">
                 {getGreeting()}, {username}!
               </h1>
               <p className="welcome-text">
-                How can I help you with your cost analysis today?
+                How can I help you with your cost analysis today? Upload a CSV file to analyze and visualize data!
               </p>
             </div>
           )}
 
-          {/* Messages */}
           <div className="messages-container">
             {messages.map((msg, index) => (
               <div
@@ -708,18 +814,37 @@ export default function CostSageChatbot() {
                     {formatMessageText(msg.text)}
                   </div>
 
-                  {/* Display attachments if any */}
                   {msg.attachments && msg.attachments.length > 0 && (
                     <div className="attachments-container">
                       {msg.attachments.map((file, fileIndex) => (
                         <div key={fileIndex} className="attachment-item">
-                          <Paperclip size={14} />
-                          <a href={file.url} target="_blank" rel="noopener noreferrer" className="attachment-name">
+                          <a href={file.url} target="_blank" rel="noopener noreferrer">
                             {file.name}
                           </a>
                           <span className="attachment-size">({formatFileSize(file.size)})</span>
+                          {file.content && (
+                            <div className="attachment-content">
+                              <p><strong>File Content:</strong></p>
+                              <pre>{file.content.slice(0, 200)}...</pre>
+                            </div>
+                          )}
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {msg.graph && (
+                    <div className="graph-container" style={{ marginTop: '10px', maxWidth: '600px' }}>
+                      <Line
+                        data={msg.graph}
+                        options={{
+                          responsive: true,
+                          plugins: {
+                            legend: { position: 'top' },
+                            title: { display: true, text: 'CSV Data Visualization' },
+                          },
+                        }}
+                      />
                     </div>
                   )}
 
@@ -738,8 +863,7 @@ export default function CostSageChatbot() {
                 </div>
               </div>
             ))}
-            
-            {/* Processing indicator shown at the bottom of messages */}
+
             {waitingForResponse && (
               <div className="message message-bot waiting-response">
                 <div className="bot-avatar">
@@ -754,14 +878,12 @@ export default function CostSageChatbot() {
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
         </div>
 
-        {/* Input Area */}
         <div className="input-container">
-          {/* Uploaded Files Preview */}
           {uploadedFiles.length > 0 && (
             <div className="uploaded-files-container">
               {uploadedFiles.map((file, index) => (
@@ -777,7 +899,6 @@ export default function CostSageChatbot() {
             </div>
           )}
 
-          {/* Upload status indicator */}
           {isUploading && (
             <div className="upload-status">
               <div className="spinner"></div>
@@ -785,7 +906,6 @@ export default function CostSageChatbot() {
             </div>
           )}
 
-          {/* Transcription status */}
           {isTranscribing && (
             <div className="upload-status">
               <div className="spinner"></div>
@@ -808,11 +928,12 @@ export default function CostSageChatbot() {
               onChange={handleFileUpload}
               disabled={isUploading || isProcessing || isTranscribing}
               multiple
+              accept=".csv,.txt,.pdf,.doc,.docx"
             />
 
             <textarea
               className="input-textarea"
-              placeholder={uploadedFiles.length > 0 ? "Add a message about your files..." : "Ask about your costs..."}
+              placeholder={uploadedFiles.length > 0 ? "Add a message about your files or ask to visualize data..." : "Ask about your costs or upload a CSV to visualize data..."}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -820,7 +941,7 @@ export default function CostSageChatbot() {
               disabled={isUploading || isProcessing || isTranscribing}
             />
 
-            <button 
+            <button
               className={`icon-button ${isTranscribing ? 'mic-active' : ''}`}
               onClick={handleVoiceTranscription}
               disabled={isUploading || isProcessing || isTranscribing}
