@@ -123,7 +123,7 @@ const Dashboard = () => {
       navigate("/chat");
     } else {
       const formattedFeature = featureName.toLowerCase().replace(/\s+/g, "-");
-      navigate(`/expense/${formattedFeature}`);
+navigate(`/expense/${formattedFeature}`);
     }
   };
 
