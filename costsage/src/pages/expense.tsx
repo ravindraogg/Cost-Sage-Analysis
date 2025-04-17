@@ -52,10 +52,10 @@ const ExpenseTracker = () => {
     .toLowerCase();
 
   const expenseTypeMap: { [key: string]: string } = {
-    "business expense tracker": "business expense tracker",
-    "personal expense tracker": "personal expense tracker",
-    "daily expense tracker": "daily expense tracker",
-    "full expense tracker": "full expense tracker",
+    "business expense": "business expense tracker",
+    "personal expense": "personal expense tracker",
+    "daily expense": "daily expense tracker",
+    "full expense": "full expense tracker",
     "other expenses": "other expenses",
   };
 
@@ -525,19 +525,17 @@ const ExpenseTracker = () => {
     try {
       const token = localStorage.getItem("token");
       const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
-      // Format expenseType to match Dashboard and AnalysisPage (hyphenated, lowercase)
-      const formattedExpenseType = expenseType.toLowerCase().replace(/\s+/g, "-");
 
       await axios.post(
         `${base}/api/expenses/analyze`,
         {
           username,
           userEmail,
-          expenseType: formattedExpenseType,
+          expenseType,
           expenses: expensesToAnalyze.map((expense) => ({
             ...expense,
             userEmail,
-            expenseType: formattedExpenseType,
+            expenseType,
           })),
         },
         {
@@ -546,10 +544,9 @@ const ExpenseTracker = () => {
           },
         }
       );
-      navigate(`/analysis/${formattedExpenseType}`);
+      navigate(`/analysis/${expenseType}`);
     } catch (error) {
       console.error("Error submitting data:", error);
-      alert("Failed to submit expenses for analysis. Please try again.");
     }
   };
 
@@ -585,7 +582,7 @@ const ExpenseTracker = () => {
           case "date-asc":
             return new Date(a.date).getTime() - new Date(b.date).getTime();
           case "date-desc":
-            return new Date(b.date).getTime() - new Date(b.date).getTime();
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
           case "amount-asc":
             return a.amount - b.amount;
           case "amount-desc":
@@ -1091,7 +1088,7 @@ const ExpenseTracker = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <NavLink to={`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`}>
+          <NavLink to={`/analysis/${expenseType}`}>
             <motion.button
               className="analysis-button"
               whileHover={{ scale: 1.05 }}
