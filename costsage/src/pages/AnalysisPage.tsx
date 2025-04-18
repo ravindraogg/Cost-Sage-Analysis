@@ -16,6 +16,9 @@ import {
 } from "chart.js";
 import LoadingCoin from "./LoadingCoin";
 import "./AnalysisPage.css";
+import type { JSX } from "react";
+
+const base = import.meta.env.VITE_BASE_URL;
 
 Chart.register(
   CategoryScale,
@@ -46,7 +49,6 @@ const AnalysisPage = () => {
   const [activeChart, setActiveChart] = useState<"bar" | "line" | "pie">("bar");
   const navigate = useNavigate();
 
-  // Early return for invalid expenseType
   if (!expenseType) {
     return (
       <div className="analysis-container">
@@ -66,29 +68,35 @@ const AnalysisPage = () => {
 
       try {
         const token = localStorage.getItem("token");
-        if (!token) throw new Error("No authentication token found. Please log in.");
+        if (!token) {
+          throw new Error("No authentication token found. Please log in.");
+        }
 
         const response = await axios.get(
-          ${import.meta.env.VITE_BASE_URL}/api/expenses/analysis/${encodeURIComponent(expenseType)},
-          { headers: { Authorization: Bearer ${token} } }
+          `${base}/api/expenses/analysis/${encodeURIComponent(expenseType)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
 
-        console.log("API Response:", response.data);
-        if (response.data.success && Array.isArray(response.data.analysis)) {
+        if (response.data.success) {
           setAnalysisData(response.data.analysis);
+          console.log("analysisData state:", response.data.analysis);
           if (response.data.analysis.length > 0) {
-            await generateInsights(response.data.analysis);
+            generateInsights(response.data.analysis);
           } else {
             setInsights(["No expense data available to generate insights."]);
             setInsightsLoading(false);
           }
         } else {
-          throw new Error(response.data.message || "Invalid analysis data");
+          throw new Error("Failed to fetch analysis data");
         }
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to fetch analysis data";
-        console.error("Fetch error:", err.response?.data || err);
+        console.error("Failed to fetch analysis data:", errorMessage);
         setError(errorMessage);
         setInsightsLoading(false);
       } finally {
@@ -110,39 +118,70 @@ const AnalysisPage = () => {
         return;
       }
 
-      const categories = data.map((item) => item._id || "Unknown");
-      const amounts = data.map((item) => item.totalAmount || 0);
+      const categories = data.map((item) => item._id);
+      const amounts = data.map((item) => item.totalAmount);
 
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found. Please log in.");
+      if (!token) {
+        throw new Error("No authentication token found. Please log in.");
+      }
 
       const response = await axios.post(
-        ${import.meta.env.VITE_BASE_URL}/api/insights,
-        { expenseType, categories, amounts },
-        { headers: { Authorization: Bearer ${token}, "Content-Type": "application/json" } }
+        `${base}/api/insights`,
+        {
+          expenseType,
+          categories,
+          amounts,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
 
-      console.log("Insights Response:", response.data);
-      if (response.data.success && Array.isArray(response.data.insights)) {
-        const cleanedInsights = response.data.insights
-          .filter((insight: string) => insight.trim())
-          .map((insight: string) => {
-            const match = insight.match(/^\d+\.\s*(.*)/);
-            return match ? match[1].trim() : insight.trim();
-          });
-        setInsights(cleanedInsights.length > 0 ? cleanedInsights : ["No actionable insights generated."]);
+      if (response.data.success) {
+        const insightsText = response.data.insights;
+        const cleanedInsights = insightsText
+          .split("\n")
+          .filter((line: string) => line.trim() && /^\d+\./.test(line))
+          .map((line: string) => line.trim());
+
+        setInsights(
+          cleanedInsights.length > 0
+            ? cleanedInsights
+            : ["No actionable insights could be generated."]
+        );
+        console.log("Insights set:", cleanedInsights);
       } else {
         throw new Error(response.data.message || "Failed to generate insights");
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to generate insights. Please try again later.";
-      console.error("Insights error:", err);
+        err instanceof Error
+          ? err.message
+          : "Failed to generate insights. Please try again later.";
+      console.error("Error generating insights:", err);
       setInsightsError(errorMessage);
       setInsights(["Unable to generate insights at this time."]);
     } finally {
       setInsightsLoading(false);
     }
+  };
+
+  const parseInsightText = (text: string): JSX.Element => {
+    const parts = text.split(/\*\*(.*?)\*\*/g);
+    return (
+      <>
+        {parts.map((part, index) => {
+          if (index % 2 === 1) {
+            return <strong key={index}>{part}</strong>;
+          }
+          return <span key={index}>{part}</span>;
+        })}
+      </>
+    );
   };
 
   const generateColors = (count: number) => {
@@ -151,17 +190,17 @@ const AnalysisPage = () => {
       const r = Math.floor(Math.random() * 256);
       const g = Math.floor(Math.random() * 256);
       const b = Math.floor(Math.random() * 256);
-      colors.push(rgba(${r}, ${g}, ${b}, 0.6));
+      colors.push(`rgba(${r}, ${g}, ${b}, 0.6)`);
     }
     return colors;
   };
 
   const barChartData = {
-    labels: analysisData.map((item) => item._id || "Unknown"),
+    labels: analysisData.map((item) => item._id),
     datasets: [
       {
         label: "Total Amount",
-        data: analysisData.map((item) => item.totalAmount || 0),
+        data: analysisData.map((item) => item.totalAmount),
         backgroundColor: generateColors(analysisData.length),
         borderColor: analysisData.map(() => "rgba(0, 0, 0, 1)"),
         borderWidth: 1,
@@ -170,11 +209,11 @@ const AnalysisPage = () => {
   };
 
   const lineChartData = {
-    labels: analysisData.map((item) => item._id || "Unknown"),
+    labels: analysisData.map((item) => item._id),
     datasets: [
       {
         label: "Total Amount",
-        data: analysisData.map((item) => item.totalAmount || 0),
+        data: analysisData.map((item) => item.totalAmount),
         borderColor: "rgba(153, 102, 255, 1)",
         backgroundColor: "rgba(153, 102, 255, 0.2)",
         borderWidth: 2,
@@ -184,13 +223,25 @@ const AnalysisPage = () => {
   };
 
   const pieChartData = {
-    labels: analysisData.map((item) => item._id || "Unknown"),
+    labels: analysisData.map((item) => item._id),
     datasets: [
       {
         label: "Total Amount",
-        data: analysisData.map((item) => item.totalAmount || 0),
-        backgroundColor: generateColors(analysisData.length),
-        borderColor: generateColors(analysisData.length).map((c) => c.replace("0.6", "1")),
+        data: analysisData.map((item) => item.totalAmount),
+        backgroundColor: [
+          "rgba(255, 99, 132, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+          "rgba(255, 206, 86, 0.6)",
+          "rgba(75, 192, 192, 0.6)",
+          "rgba(153, 102, 255, 0.6)",
+        ],
+        borderColor: [
+          "rgba(255, 99, 132, 1)",
+          "rgba(54, 162, 235, 1)",
+          "rgba(255, 206, 86, 1)",
+          "rgba(75, 192, 192, 1)",
+          "rgba(153, 102, 255, 1)",
+        ],
         borderWidth: 1,
       },
     ],
@@ -201,33 +252,13 @@ const AnalysisPage = () => {
     plugins: {
       title: {
         display: true,
-        text: Expense Analysis for ${expenseType?.replace(/-/g, " ") || "Unknown"},
-      },
-      legend: {
-        display: true,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        display: true,
-        title: {
-          display: true,
-          text: "Amount ($)",
-        },
-      },
-      x: {
-        display: true,
-        title: {
-          display: true,
-          text: "Categories",
-        },
+        text: `Expense Analysis for ${expenseType}`,
       },
     },
   };
 
   return (
-    <div className="analysis-container">
+    <div className="div">
       <nav className="navbar">
         <div className="navbar-brand">
           <h1>Cost-Sage</h1>
@@ -238,80 +269,127 @@ const AnalysisPage = () => {
           </button>
         </div>
       </nav>
+      <div className="analysis-container">
+        <h1 style={{ textTransform: "capitalize" }}>
+          Expense Analysis: {expenseType.replace(/-/g, " ")}
+        </h1>
 
-      <h1 style={{ textTransform: "capitalize" }}>
-        Expense Analysis: {expenseType?.replace(/-/g, " ") || "Unknown"}
-      </h1>
+        {loading && (
+          <div className="centered-loading">
+            <LoadingCoin size="medium" text="Loading analysis data..." />
+          </div>
+        )}
+        {error && <p className="error-message">Error: {error}</p>}
 
-      {loading && (
-        <div className="centered-loading">
-          <LoadingCoin size="medium" text="Loading analysis data..." />
-        </div>
-      )}
-      {error && <p className="error-message">Error: {error}</p>}
-
-      {!loading && !error && (
-        <>
-          {analysisData.length === 0 ? (
-            <div className="no-data-message">
-              <p>No data available for analysis. Add expenses to see charts and insights.</p>
+        {!loading && !error && (
+          <>
+            <div className="chart-tabs">
+              <button
+                className={`tab-button ${activeChart === "bar" ? "active" : ""}`}
+                onClick={() => setActiveChart("bar")}
+                style={{
+                  background:
+                    activeChart === "bar"
+                      ? "linear-gradient(135deg, #4361ee, #00d4ff)"
+                      : "",
+                  color: activeChart === "bar" ? "white" : "",
+                }}
+              >
+                Bar Chart
+              </button>
+              <button
+                className={`tab-button ${activeChart === "line" ? "active" : ""}`}
+                onClick={() => setActiveChart("line")}
+                style={{
+                  background:
+                    activeChart === "line"
+                      ? "linear-gradient(135deg, #4361ee, #00d4ff)"
+                      : "",
+                  color: activeChart === "line" ? "white" : "",
+                }}
+              >
+                Line Chart
+              </button>
+              <button
+                className={`tab-button ${activeChart === "pie" ? "active" : ""}`}
+                onClick={() => setActiveChart("pie")}
+                style={{
+                  background:
+                    activeChart === "pie"
+                      ? "linear-gradient(135deg, #4361ee, #00d4ff)"
+                      : "",
+                  color: activeChart === "pie" ? "white" : "",
+                }}
+              >
+                Pie Chart
+              </button>
             </div>
-          ) : (
-            <>
-              <div className="chart-tabs">
-                {["bar", "line", "pie"].map((chartType) => (
-                  <button
-                    key={chartType}
-                    className={tab-button ${activeChart === chartType ? "active" : ""}}
-                    onClick={() => setActiveChart(chartType as "bar" | "line" | "pie")}
-                    style={{
-                      background: activeChart === chartType ? "linear-gradient(135deg, #4361ee, #00d4ff)" : "",
-                      color: activeChart === chartType ? "white" : "",
-                    }}
-                  >
-                    {chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart
-                  </button>
-                ))}
-              </div>
 
-              <div className="chart-container">
-                {activeChart === "bar" && <Bar data={barChartData} options={chartOptions} />}
-                {activeChart === "line" && <Line data={lineChartData} options={chartOptions} />}
-                {activeChart === "pie" && <Pie data={pieChartData} options={chartOptions} />}
-              </div>
-            </>
-          )}
-
-          <div className="insights-card">
-            <div className="insights-header">
-              <h2>AI Insights</h2>
-              {insightsLoading && (
-                <div className="insights-loader">
-                  <LoadingCoin size="small" text="Generating insights..." />
-                </div>
+            <div className="chart-container">
+              {activeChart === "bar" && (
+                <Bar data={barChartData} options={chartOptions} />
+              )}
+              {activeChart === "line" && (
+                <Line data={lineChartData} options={chartOptions} />
+              )}
+              {activeChart === "pie" && (
+                <Pie data={pieChartData} options={chartOptions} />
               )}
             </div>
 
-            {insightsError && <p className="error-message">Error: {insightsError}</p>}
-
-            {!insightsLoading && (
-              <>
-                {insights.length > 0 ? (
-                  <div className="insights-content">
-                    {insights.map((insight, index) => (
-                      <div key={index} className="insight-point">
-                        <span className="insight-text">{insight}</span>
-                      </div>
-                    ))}
+            <div className="insights-card">
+              <div className="insights-header">
+                <h2>AI Insights</h2>
+                {insightsLoading && (
+                  <div className="insights-loader">
+                    <LoadingCoin size="small" text="Generating insights..." />
                   </div>
-                ) : (
-                  <div className="insights-empty">No insights available for this data.</div>
                 )}
-              </>
-            )}
-          </div>
-        </>
-      )}
+              </div>
+
+              {insightsError && <p className="error-message">Error: {insightsError}</p>}
+
+              {!insightsLoading && (
+                <>
+                  {insights.length > 0 ? (
+                    <div className="insights-content">
+                      {insights.map((insight, index) => {
+                        const isNumbered = /^\d+\./.test(insight);
+                        if (isNumbered) {
+                          const [number, ...rest] = insight.split(".");
+                          const insightText = rest.join(".").trim();
+                          return (
+                            <div key={index} className="insight-point">
+                              <span className="insight-number">{number}.</span>
+                              <span className="insight-text">
+                                {parseInsightText(insightText)}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={index} className="insight-point">
+                            <span className="insight-text">
+                              {parseInsightText(insight)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="insights-empty">
+                      No insights available for this data.
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </>
+        )}
+        {!loading && !error && analysisData.length === 0 && (
+          <p>No expense data available to display charts.</p>
+        )}
+      </div>
     </div>
   );
 };
