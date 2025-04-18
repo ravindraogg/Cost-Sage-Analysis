@@ -347,7 +347,7 @@ const ExpenseTracker = () => {
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     const storedEmail = localStorage.getItem("userEmail");
-  
+
     if (storedUsername) setUsername(storedUsername);
     if (storedEmail) setUserEmail(storedEmail);
 
@@ -355,40 +355,33 @@ const ExpenseTracker = () => {
     setTemporaryExpenses([]);
     setFreshStart(false);
     fetchExpenses();
-  }, [expenseType]); 
+  }, [expenseType]);
 
   const fetchExpenses = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found. Please log in.");
-      }
-  
-      // Only fetch if expenses are empty or a fresh start is needed
-      if (expenses.length === 0 || freshStart) {
-        const response = await axios.get(
-          `${base}/api/expenses/${encodeURIComponent(expenseType)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        
-        if (response.data.success) {
-          const formattedExpenses = response.data.expenses.map((expense: any) => ({
-            _id: expense._id,
-            amount: expense.amount,
-            category: expense.category,
-            description: expense.description,
-            date: expense.date,
-            userEmail: expense.userEmail,
-            expenseType: expense.expenseType,
-          }));
-          setExpenses(formattedExpenses);
-          setShowPreviousExpenseCard(formattedExpenses.length > 0);
+      const response = await axios.get(
+        `${base}/api/expenses/${encodeURIComponent(expenseType)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
+      
+      if (response.data.success) {
+        const formattedExpenses = response.data.expenses.map((expense: any) => ({
+          _id: expense._id,
+          amount: expense.amount,
+          category: expense.category,
+          description: expense.description,
+          date: expense.date,
+          userEmail: expense.userEmail,
+          expenseType: expense.expenseType,
+        }));
+        setExpenses(formattedExpenses);
+        setShowPreviousExpenseCard(formattedExpenses.length > 0);
       }
     } catch (err) {
       console.error("Failed to fetch expenses:", err);
@@ -528,81 +521,55 @@ const ExpenseTracker = () => {
     }
   };
 
-const submitForAnalysis = async (expenseType: string) => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Please log in to continue");
-      navigate("/login");
-      return;
-    }
-
-    const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
-    if (expensesToAnalyze.length === 0) {
-      alert("No expenses available to analyze");
-      return;
-    }
-
-    const formattedExpenseType = expenseType.toLowerCase().replace(/-/g, " ");
-    console.log("Submitting data:", {
-      username,
-      userEmail,
-      expenseType: formattedExpenseType,
-      expenses: expensesToAnalyze, // Log the full expenses array
-    });
-
-    // Validate expenses
-    const validExpenses = expensesToAnalyze.filter(
-      (expense) =>
-        expense.amount &&
-        typeof expense.amount === "number" &&
-        expense.amount > 0 &&
-        expense.category &&
-        expense.description &&
-        expense.date &&
-        /^\d{4}-\d{2}-\d{2}$/.test(expense.date) &&
-        expense.userEmail &&
-        expense.expenseType
-    );
-    if (validExpenses.length === 0) {
-      alert("No valid expenses to analyze");
-      return;
-    }
-
-    const response = await axios.post(
-      `${base}/api/expenses/analyze`,
-      {
+  const submitForAnalysis = async (expenseType: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please log in to continue");
+        navigate("/login");
+        return;
+      }
+  
+      const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
+      if (expensesToAnalyze.length === 0) {
+        alert("No expenses available to analyze");
+        return;
+      }
+  
+      // Format expenseType to match server enum (space-separated)
+      const formattedExpenseType = expenseType.toLowerCase().replace(/-/g, " ");
+      console.log("Submitting data:", {
         username,
         userEmail,
         expenseType: formattedExpenseType,
-        expenses: validExpenses.map((expense) => ({
-          amount: expense.amount,
-          category: expense.category,
-          description: expense.description,
-          date: expense.date,
+        expenses: expensesToAnalyze,
+      });
+  
+      await axios.post(
+        `${base}/api/expenses/analyze`,
+        {
+          username,
           userEmail,
           expenseType: formattedExpenseType,
-        })),
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+          expenses: expensesToAnalyze.map((expense) => ({
+            ...expense,
+            userEmail,
+            expenseType: formattedExpenseType,
+          })),
         },
-      }
-    );
-
-    console.log("Analysis response:", response.data);
-    navigate(`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`);
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.message || error.message || "Unknown error";
-    console.error("Error submitting data:", {
-      message: errorMessage,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
-    alert(`Failed to submit expenses for analysis: ${errorMessage}`);
-  }
-};
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // Navigate with hyphenated format for URL consistency
+      navigate(`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`);
+    } catch (error: any) {
+      console.error("Error submitting data:", error.response?.data || error.message);
+      alert("Failed to submit expenses for analysis. Please try again.");
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
