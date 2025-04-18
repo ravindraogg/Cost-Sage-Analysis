@@ -154,6 +154,7 @@ const AnalysisPage = () => {
             ? cleanedInsights
             : ["No actionable insights could be generated."]
         );
+        console.log("Insights set:", cleanedInsights);
       } else {
         throw new Error(response.data.message || "Failed to generate insights");
       }
@@ -359,42 +360,47 @@ const AnalysisPage = () => {
                 )}
               </div>
 
-              {insightsError && (
-                <p className="error-message">Error: {insightsError}</p>
-              )}
+              {insightsError && <p className="error-message">Error: {insightsError}</p>}
 
-              {!insightsLoading && insights.length > 0 ? (
-                <div className="insights-content">
-                  {insights.map((insight, index) => {
-                    const isNumbered = /^\d+\./.test(insight);
-                    if (isNumbered) {
-                      const [number, ...rest] = insight.split(".");
-                      const insightText = rest.join(".").trim();
-                      return (
-                        <div key={index} className="insight-point">
-                          <span className="insight-number">{number}.</span>
-                          <span className="insight-text">
-                            {parseInsightText(insightText)}
-                          </span>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div key={index} className="insight-point">
-                        <span className="insight-text">
-                          {parseInsightText(insight)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : !insightsLoading && !insightsError ? (
-                <div className="insights-empty">
-                  No insights available for this data.
-                </div>
-              ) : null}
+              {!insightsLoading && (
+                <>
+                  {insights.length > 0 ? (
+                    <div className="insights-content">
+                      {insights.map((insight, index) => {
+                        const isNumbered = /^\d+\./.test(insight);
+                        if (isNumbered) {
+                          const [number, ...rest] = insight.split(".");
+                          const insightText = rest.join(".").trim();
+                          return (
+                            <div key={index} className="insight-point">
+                              <span className="insight-number">{number}.</span>
+                              <span className="insight-text">
+                                {parseInsightText(insightText)}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={index} className="insight-point">
+                            <span className="insight-text">
+                              {parseInsightText(insight)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="insights-empty">
+                      No insights available for this data.
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </>
+        )}
+        {!loading && !error && analysisData.length === 0 && (
+          <p>No expense data available to display charts.</p>
         )}
       </div>
     </div>
