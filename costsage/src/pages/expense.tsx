@@ -524,36 +524,29 @@ const ExpenseTracker = () => {
   const submitForAnalysis = async (expenseType: string) => {
     try {
       const token = localStorage.getItem("token");
-      const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
+      const expensesToAnalyze = freshStart ? temporaryExpenses : expenses.filter((e) => !e._id); // Only send unsaved expenses
       const formattedExpenseTypeForServer = expenseType; // Keep as "business expense tracker"
-      const formattedExpenseTypeForUrl = expenseType.toLowerCase().replace(/\s+/g, "-"); // For navigation
-
-      // Validate expenseType against server-expected values
-      const validTypes = [
-        "full expense tracker",
-        "business expense tracker",
-        "personal expense tracker",
-        "daily expense tracker",
-        "other expenses",
-      ];
+      const formattedExpenseTypeForUrl = expenseType.toLowerCase().replace(/\s+/g, "-");
+      
+      const validTypes = ["business expense tracker", "personal expense tracker", "daily expense tracker", "full expense tracker", "other expenses"];
       if (!validTypes.includes(formattedExpenseTypeForServer.toLowerCase())) {
         throw new Error(`Invalid expense type. Must be one of: ${validTypes.join(", ")}`);
       }
-
+  
       if (!username || !userEmail || !expensesToAnalyze.length) {
         throw new Error("Missing required fields: username, userEmail, or expenses");
       }
       if (!token) {
         throw new Error("No authentication token found. Please log in.");
       }
-
+  
       console.log("Submitting for analysis:", {
         username,
         userEmail,
         expenseType: formattedExpenseTypeForServer,
         expenses: expensesToAnalyze,
       });
-
+  
       await axios.post(
         `${base}/api/expenses/analyze`,
         {
@@ -572,7 +565,7 @@ const ExpenseTracker = () => {
           },
         }
       );
-      navigate(`/analysis/${formattedExpenseTypeForUrl}`);
+      navigate(`/analysis/${formattedExpenseTypeForUrl}`, { replace: true }); // Use replace to avoid back navigation issues
     } catch (error: any) {
       console.error("Error submitting data:", error);
       alert(
