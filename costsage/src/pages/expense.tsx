@@ -347,7 +347,7 @@ const ExpenseTracker = () => {
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     const storedEmail = localStorage.getItem("userEmail");
-
+  
     if (storedUsername) setUsername(storedUsername);
     if (storedEmail) setUserEmail(storedEmail);
 
@@ -355,33 +355,40 @@ const ExpenseTracker = () => {
     setTemporaryExpenses([]);
     setFreshStart(false);
     fetchExpenses();
-  }, [expenseType]);
+  }, [expenseType]); 
 
   const fetchExpenses = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${base}/api/expenses/${encodeURIComponent(expenseType)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      if (!token) {
+        throw new Error("No authentication token found. Please log in.");
+      }
+  
+      // Only fetch if expenses are empty or a fresh start is needed
+      if (expenses.length === 0 || freshStart) {
+        const response = await axios.get(
+          `${base}/api/expenses/${encodeURIComponent(expenseType)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        
+        if (response.data.success) {
+          const formattedExpenses = response.data.expenses.map((expense: any) => ({
+            _id: expense._id,
+            amount: expense.amount,
+            category: expense.category,
+            description: expense.description,
+            date: expense.date,
+            userEmail: expense.userEmail,
+            expenseType: expense.expenseType,
+          }));
+          setExpenses(formattedExpenses);
+          setShowPreviousExpenseCard(formattedExpenses.length > 0);
         }
-      );
-      
-      if (response.data.success) {
-        const formattedExpenses = response.data.expenses.map((expense: any) => ({
-          _id: expense._id,
-          amount: expense.amount,
-          category: expense.category,
-          description: expense.description,
-          date: expense.date,
-          userEmail: expense.userEmail,
-          expenseType: expense.expenseType,
-        }));
-        setExpenses(formattedExpenses);
-        setShowPreviousExpenseCard(formattedExpenses.length > 0);
       }
     } catch (err) {
       console.error("Failed to fetch expenses:", err);
