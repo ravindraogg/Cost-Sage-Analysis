@@ -362,10 +362,10 @@ const ExpenseTracker = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `${base}/api/expenses/${encodeURIComponent(expenseType)}`,
+        ${base}/api/expenses/${encodeURIComponent(expenseType)},
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: Bearer ${token},
           },
         }
       );
@@ -432,7 +432,7 @@ const ExpenseTracker = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        `${base}/api/expenses`,
+        ${base}/api/expenses,
         {
           expenses: [newExpense],
           username,
@@ -441,7 +441,7 @@ const ExpenseTracker = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: Bearer ${token},
           },
         }
       );
@@ -497,10 +497,10 @@ const ExpenseTracker = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.delete(
-        `${base}/api/expenses/${expenseId}`,
+        ${base}/api/expenses/${expenseId},
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: Bearer ${token},
           },
         }
       );
@@ -524,29 +524,26 @@ const ExpenseTracker = () => {
   const submitForAnalysis = async (expenseType: string) => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        alert("Please log in to continue");
-        navigate("/login");
-        return;
-      }
-  
       const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
-      if (expensesToAnalyze.length === 0) {
-        alert("No expenses available to analyze");
-        return;
+      const formattedExpenseType = expenseType.toLowerCase().replace(/\s+/g, "-");
+
+      // Validate data before sending
+      if (!username || !userEmail || !expensesToAnalyze.length) {
+        throw new Error("Missing required fields: username, userEmail, or expenses");
       }
-  
-      // Format expenseType to match server enum (space-separated)
-      const formattedExpenseType = expenseType.toLowerCase().replace(/-/g, " ");
-      console.log("Submitting data:", {
+      if (!token) {
+        throw new Error("No authentication token found. Please log in.");
+      }
+
+      console.log("Submitting for analysis:", {
         username,
         userEmail,
         expenseType: formattedExpenseType,
         expenses: expensesToAnalyze,
       });
-  
+
       await axios.post(
-        `${base}/api/expenses/analyze`,
+        ${base}/api/expenses/analyze,
         {
           username,
           userEmail,
@@ -559,15 +556,16 @@ const ExpenseTracker = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: Bearer ${token},
           },
         }
       );
-      // Navigate with hyphenated format for URL consistency
-      navigate(`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`);
-    } catch (error: any) {
-      console.error("Error submitting data:", error.response?.data || error.message);
-      alert("Failed to submit expenses for analysis. Please try again.");
+      navigate(/analysis/${formattedExpenseType});
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      alert(
+        error.response?.data?.message || "Failed to submit expenses for analysis. Please try again."
+      );
     }
   };
 
@@ -667,7 +665,7 @@ const ExpenseTracker = () => {
       count: currentExpenses.length,
       totalAmount,
       mostFrequentCategory,
-      dateRange: `${formatDate(minDate)} - ${formatDate(maxDate)} (${totalDays} days)`,
+      dateRange: ${formatDate(minDate)} - ${formatDate(maxDate)} (${totalDays} days),
       totalDays,
     };
   };
@@ -684,8 +682,8 @@ const ExpenseTracker = () => {
       ...filteredExpenses.map((expense) =>
         [
           expense.date,
-          `"${expense.category}"`,
-          `"${expense.description}"`,
+          "${expense.category}",
+          "${expense.description}",
           expense.amount,
         ].join(",")
       ),
@@ -695,7 +693,7 @@ const ExpenseTracker = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `${expenseType}-expenses.csv`);
+    link.setAttribute("download", ${expenseType}-expenses.csv);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -912,7 +910,7 @@ const ExpenseTracker = () => {
                   >
                     {getFilteredSuggestions().map((suggestion, index) => (
                       <motion.div
-                        key={`suggestion-${index}`}
+                        key={suggestion-${index}}
                         className="suggestion-item"
                         onClick={() => handleCategorySelect(suggestion)}
                         whileHover={{ backgroundColor: "#f0f0f0" }}
@@ -1013,7 +1011,7 @@ const ExpenseTracker = () => {
                     >
                       <option value="">All Categories</option>
                       {getUniqueCategories().map((cat, index) => (
-                        <option key={`category-${index}`} value={cat}>
+                        <option key={category-${index}} value={cat}>
                           {cat}
                         </option>
                       ))}
@@ -1050,7 +1048,7 @@ const ExpenseTracker = () => {
                     <tbody>
                       {filteredExpenses.map((expense, index) => (
                         <motion.tr
-                          key={`expense-${expense._id}-${index}`}
+                          key={expense-${expense._id}-${index}}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
@@ -1109,7 +1107,7 @@ const ExpenseTracker = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <NavLink to={`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`}>
+          <NavLink to={/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}}>
             <motion.button
               className="analysis-button"
               whileHover={{ scale: 1.05 }}
@@ -1204,7 +1202,7 @@ const ExpenseTracker = () => {
           <p style={{ marginBottom: "20px", color: "#6b7280" }}>
             Describe your expenses in natural language, and our AI will extract the details for you.
           </p>
-          <NavLink to={`/chat`} style={{ textDecoration: "none" }}>
+          <NavLink to={/chat} style={{ textDecoration: "none" }}>
             <motion.button
               style={{
                 background: "linear-gradient(135deg, #4361ee, #00d4ff)",
