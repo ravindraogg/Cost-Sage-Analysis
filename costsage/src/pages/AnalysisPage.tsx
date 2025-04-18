@@ -60,13 +60,13 @@ const AnalysisPage = () => {
         if (!token) throw new Error("No authentication token found. Please log in.");
 
         const response = await axios.get(
-          `${base}/api/expenses/analysis/${encodeURIComponent(expenseType)}`,
+          `${base}/api/expenses/analysis/${encodeURIComponent(expenseType || "")}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (response.data.success) {
           const data = response.data.analysis || [];
-          console.log("Fetched analysis data:", JSON.stringify(data, null, 2)); // Detailed log
+          console.log("Fetched analysis data:", JSON.stringify(data, null, 2));
           setAnalysisData(data);
           if (data.length > 0) {
             generateInsights(data);
@@ -79,11 +79,7 @@ const AnalysisPage = () => {
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch analysis data";
-        if (axios.isAxiosError(err)) {
-          console.error("Fetch error:", err.response?.data || err);
-        } else {
-          console.error("Fetch error:", err);
-        }
+        console.error("Fetch error:", err);
         setError(errorMessage);
         setInsightsLoading(false);
       } finally {
@@ -93,7 +89,7 @@ const AnalysisPage = () => {
     };
 
     fetchAnalysisData();
-  }, [expenseType]); // Dependency on expenseType only
+  }, [expenseType]);
 
   const generateInsights = async (data: AnalysisData[]) => {
     setInsightsLoading(true);
