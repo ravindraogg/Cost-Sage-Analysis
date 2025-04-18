@@ -1,10 +1,11 @@
-import { useState, useEffect, ChangeEvent, SetStateAction } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import "./Expense.css";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import LoadingCoin from "./LoadingCoin";
 import FullScreenLoading from "./FullScreenLoading";
+import { AnalysisData } from "./AnalysisPage"; // Import type
 const base = import.meta.env.VITE_BASE_URL;
 
 interface Expense {
@@ -43,7 +44,9 @@ const ExpenseTracker = () => {
   const [showPreviousExpenseCard, setShowPreviousExpenseCard] = useState<boolean>(true);
   const [freshStart, setFreshStart] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Prevent multiple submissions
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [analysisData, setAnalysisData] = useState<AnalysisData[]>([]); // Kept for state passing
+  const [insights, setInsights] = useState<string[]>([]); // Kept for state passing
 
   const expenseTypeRaw = location.pathname
     .split("/")
@@ -68,19 +71,23 @@ const ExpenseTracker = () => {
   const expenseCategories: ExpenseCategory = {
     business: [
       "Office Supplies", "Office Furniture", "Office Equipment", "Printing & Stationery",
-      // ... (rest of the categories remain the same as in your original code)
+      "Business Travel", "Client Meetings", "Marketing", "Software Subscriptions",
+      "Professional Services", "Training & Development",
     ],
     personal: [
       "Groceries", "Restaurants", "Fast Food", "Coffee Shops",
-      // ... (rest of the categories remain the same as in your original code)
+      "Entertainment", "Clothing", "Health & Wellness", "Personal Care",
+      "Education", "Miscellaneous",
     ],
     daily: [
       "Breakfast", "Lunch", "Dinner", "Coffee/Tea",
-      // ... (rest of the categories remain the same as in your original code)
+      "Snacks", "Transportation", "Entertainment", "Shopping",
+      "Subscriptions", "Other",
     ],
     full: [
       "Housing & Utilities", "Transportation", "Food & Dining", "Health & Medical",
-      // ... (rest of the categories remain the same as in your original code)
+      "Entertainment", "Education", "Shopping", "Travel",
+      "Insurance", "Miscellaneous",
     ],
   };
 
@@ -129,7 +136,7 @@ const ExpenseTracker = () => {
           userEmail: expense.userEmail,
           expenseType: expense.expenseType,
         }));
-        console.log("Fetched expenses data:", formattedExpenses); // Debug
+        console.log("Fetched expenses data:", formattedExpenses);
         setExpenses(formattedExpenses);
         setShowPreviousExpenseCard(formattedExpenses.length > 0);
       }
@@ -232,77 +239,79 @@ const ExpenseTracker = () => {
     }
   };
 
- const submitForAnalysis = async (expenseType: string) => {
-  if (isSubmitting) return;
-  setIsSubmitting(true);
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("No authentication token found. Please log in.");
+  const submitForAnalysis = async (expenseType: string) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authentication token found. Please log in.");
 
-    // Debug initial values
-    console.log("Before submission - username:", username, "userEmail:", userEmail, "expenses:", expenses, "temporaryExpenses:", temporaryExpenses, "freshStart:", freshStart);
+      console.log("Before submission - username:", username, "userEmail:", userEmail, "expenses:", expenses, "temporaryExpenses:", temporaryExpenses, "freshStart:", freshStart);
 
-    const expensesToAnalyze = freshStart
-      ? temporaryExpenses
-      : expenses; // Use all expenses when not freshStart
+      const expensesToAnalyze = freshStart
+        ? temporaryExpenses
+        : expenses;
 
-    if (!username || !userEmail) {
-      throw new Error("Missing required fields: username or userEmail not set. Please ensure you are logged in.");
-    }
+      if (!username || !userEmail) {
+        throw new Error("Missing required fields: username or userEmail not set. Please ensure you are logged in.");
+      }
 
-    if (!expensesToAnalyze.length) {
-      console.log("No expenses to analyze. Please add some expenses first.");
-      alert("No expenses to analyze. Please add some expenses first.");
-      return; // Exit the function early if no expenses
-    }
+      if (!expensesToAnalyze.length) {
+        throw new Error("No expenses to analyze. Please add some expenses first.");
+      }
 
-    const formattedExpenseTypeForServer = expenseType;
-    const formattedExpenseTypeForUrl = expenseType.toLowerCase().replace(/\s+/g, "-");
+      const formattedExpenseTypeForServer = expenseType;
+      const formattedExpenseTypeForUrl = expenseType.toLowerCase().replace(/\s+/g, "-");
 
-    const validTypes = [
-      "full expense tracker",
-      "business expense tracker",
-      "personal expense tracker",
-      "daily expense tracker",
-      "other expenses",
-    ];
-    if (!validTypes.includes(formattedExpenseTypeForServer.toLowerCase())) {
-      throw new Error(`Invalid expense type. Must be one of: ${validTypes.join(", ")}`);
-    }
+      const validTypes = [
+        "full expense tracker",
+        "business expense tracker",
+        "personal expense tracker",
+        "daily expense tracker",
+        "other expenses",
+      ];
+      if (!validTypes.includes(formattedExpenseTypeForServer.toLowerCase())) {
+        throw new Error(`Invalid expense type. Must be one of: ${validTypes.join(", ")}`);
+      }
 
-    console.log("Submitting for analysis:", {
-      username,
-      userEmail,
-      expenseType: formattedExpenseTypeForServer,
-      expenses: expensesToAnalyze,
-    });
-
-    const response = await axios.post(
-      `${base}/api/expenses/analyze`,
-      {
+      console.log("Submitting for analysis:", {
         username,
         userEmail,
         expenseType: formattedExpenseTypeForServer,
-        expenses: expensesToAnalyze.map((expense) => ({
-          ...expense,
+        expenses: expensesToAnalyze,
+      });
+
+      const response = await axios.post(
+        `${base}/api/expenses/analyze`,
+        {
+          username,
           userEmail,
           expenseType: formattedExpenseTypeForServer,
-        })),
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (response.data.success) {
-      navigate(`/analysis/${formattedExpenseTypeForUrl}`, { replace: true });
+          expenses: expensesToAnalyze.map((expense) => ({
+            ...expense,
+            userEmail,
+            expenseType: formattedExpenseTypeForServer,
+          })),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.success) {
+        setAnalysisData(response.data.analysis || []);
+        setInsights(response.data.insights || ["No actionable insights could be generated."]);
+        navigate(`/analysis/${formattedExpenseTypeForUrl}`, { 
+          replace: true, 
+          state: { analysis: response.data.analysis, insights: response.data.insights } 
+        });
+      }
+    } catch (error: any) {
+      console.error("Error submitting data:", error.message, error.response?.data);
+      alert(
+        error.message || "Failed to submit expenses for analysis. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error: any) {
-    console.error("Error submitting data:", error.message, error.response?.data);
-    alert(
-      error.message || "Failed to submit expenses for analysis. Please try again."
-    );
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -598,7 +607,7 @@ const ExpenseTracker = () => {
               type="text"
               placeholder="Enter a brief description"
               value={description}
-              onChange={(e: { target: { value: SetStateAction<string>; }; }) => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value)}
               className="form-input"
             />
             <label className="input-label">Date</label>
@@ -606,7 +615,7 @@ const ExpenseTracker = () => {
               whileFocus={{ scale: 1.02 }}
               type="date"
               value={date}
-              onChange={(e: { target: { value: SetStateAction<string>; }; }) => setDate(e.target.value)}
+              onChange={(e) => setDate(e.target.value)}
               className="form-input"
             />
             <motion.button
@@ -815,7 +824,7 @@ const ExpenseTracker = () => {
         <motion.div
           style={{ textAlign: "center", margin: "20px 0" }}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 1}}
           transition={{ delay: 0.7 }}
         >
           <motion.button
