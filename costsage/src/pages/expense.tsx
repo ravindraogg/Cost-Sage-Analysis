@@ -242,10 +242,9 @@ const ExpenseTracker = () => {
       // Debug initial values
       console.log("Before submission - username:", username, "userEmail:", userEmail, "expenses:", expenses, "temporaryExpenses:", temporaryExpenses, "freshStart:", freshStart);
   
-      const existingExpensesIds = expenses.map((e) => e._id).filter((id) => id);
       const expensesToAnalyze = freshStart
         ? temporaryExpenses
-        : expenses; // Include all expenses, not just new ones, unless freshStart is true
+        : expenses; // Use all expenses when not freshStart
   
       if (!username || !userEmail) {
         throw new Error("Missing required fields: username or userEmail not set. Please ensure you are logged in.");
@@ -302,6 +301,7 @@ const ExpenseTracker = () => {
       setIsSubmitting(false);
     }
   };
+  
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
