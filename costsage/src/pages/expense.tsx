@@ -541,22 +541,35 @@ const submitForAnalysis = async (expenseType: string) => {
       username,
       userEmail,
       expenseType: formattedExpenseType,
-      expenses: expensesToAnalyze, // Log the full expenses array
+      expenses: expensesToAnalyze.map((e) => ({ ...e })), // Deep copy for logging
     });
 
-    // Validate expenses
-    const validExpenses = expensesToAnalyze.filter(
-      (expense) =>
+    // Enhanced validation
+    const validExpenses = expensesToAnalyze.filter((expense) => {
+      const isValid =
         expense.amount &&
         typeof expense.amount === "number" &&
         expense.amount > 0 &&
         expense.category &&
+        typeof expense.category === "string" &&
+        expense.category.trim() !== "" &&
         expense.description &&
+        typeof expense.description === "string" &&
+        expense.description.trim() !== "" &&
         expense.date &&
+        typeof expense.date === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(expense.date) &&
         expense.userEmail &&
-        expense.expenseType
-    );
+        typeof expense.userEmail === "string" &&
+        expense.userEmail.trim() !== "" &&
+        expense.expenseType &&
+        typeof expense.expenseType === "string" &&
+        expense.expenseType.trim() !== "";
+      if (!isValid) {
+        console.warn("Invalid expense skipped:", expense);
+      }
+      return isValid;
+    });
     if (validExpenses.length === 0) {
       alert("No valid expenses to analyze");
       return;
@@ -570,10 +583,10 @@ const submitForAnalysis = async (expenseType: string) => {
         expenseType: formattedExpenseType,
         expenses: validExpenses.map((expense) => ({
           amount: expense.amount,
-          category: expense.category,
-          description: expense.description,
+          category: expense.category.trim(),
+          description: expense.description.trim(),
           date: expense.date,
-          userEmail,
+          userEmail: expense.userEmail,
           expenseType: formattedExpenseType,
         })),
       },
@@ -592,6 +605,7 @@ const submitForAnalysis = async (expenseType: string) => {
       message: errorMessage,
       status: error.response?.status,
       data: error.response?.data,
+      stack: error.stack,
     });
     alert(`Failed to submit expenses for analysis: ${errorMessage}`);
   }
