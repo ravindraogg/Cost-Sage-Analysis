@@ -525,17 +525,18 @@ const ExpenseTracker = () => {
     try {
       const token = localStorage.getItem("token");
       const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
-      const formattedExpenseType = expenseType.toLowerCase().replace(/\s+/g, "-");
+      const formattedExpenseTypeForServer = expenseType; // Keep as "business expense tracker"
+      const formattedExpenseTypeForUrl = expenseType.toLowerCase().replace(/\s+/g, "-"); // For navigation
 
-      // Validate expenseType
+      // Validate expenseType against server-expected values
       const validTypes = [
-        "full-expense-tracker",
-        "business-expense-tracker",
-        "personal-expense-tracker",
-        "daily-expense-tracker",
-        "other-expenses",
+        "full expense tracker",
+        "business expense tracker",
+        "personal expense tracker",
+        "daily expense tracker",
+        "other expenses",
       ];
-      if (!validTypes.includes(formattedExpenseType)) {
+      if (!validTypes.includes(formattedExpenseTypeForServer.toLowerCase())) {
         throw new Error(`Invalid expense type. Must be one of: ${validTypes.join(", ")}`);
       }
 
@@ -549,7 +550,7 @@ const ExpenseTracker = () => {
       console.log("Submitting for analysis:", {
         username,
         userEmail,
-        expenseType: formattedExpenseType,
+        expenseType: formattedExpenseTypeForServer,
         expenses: expensesToAnalyze,
       });
 
@@ -558,11 +559,11 @@ const ExpenseTracker = () => {
         {
           username,
           userEmail,
-          expenseType: formattedExpenseType,
+          expenseType: formattedExpenseTypeForServer,
           expenses: expensesToAnalyze.map((expense) => ({
             ...expense,
             userEmail,
-            expenseType: formattedExpenseType,
+            expenseType: formattedExpenseTypeForServer,
           })),
         },
         {
@@ -571,12 +572,12 @@ const ExpenseTracker = () => {
           },
         }
       );
-      navigate(`/analysis/${formattedExpenseType}`);
+      navigate(`/analysis/${formattedExpenseTypeForUrl}`);
     } catch (error: any) {
-    console.error("Error submitting data:", error);
-    alert(
-      error?.response?.data?.message || "Failed to submit expenses for analysis. Please try again."
-    );
+      console.error("Error submitting data:", error);
+      alert(
+        error.response?.data?.message || "Failed to submit expenses for analysis. Please try again."
+      );
     }
   };
 
