@@ -31,7 +31,7 @@ Chart.register(
 );
 
 interface AnalysisData {
-  _id: string; // Category
+  _id: string;
   totalAmount: number;
   count: number;
 }
@@ -46,8 +46,11 @@ const AnalysisPage = () => {
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<"bar" | "line" | "pie">("bar");
   const navigate = useNavigate();
+  const [isFetched, setIsFetched] = useState(false); // Flag to prevent re-fetch
 
   useEffect(() => {
+    if (!expenseType || isFetched) return;
+
     const fetchAnalysisData = async () => {
       setLoading(true);
       setError(null);
@@ -57,14 +60,14 @@ const AnalysisPage = () => {
         if (!token) throw new Error("No authentication token found. Please log in.");
 
         const response = await axios.get(
-          `${base}/api/expenses/analysis/${encodeURIComponent(expenseType || "")}`,
+          `${base}/api/expenses/analysis/${encodeURIComponent(expenseType)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (response.data.success) {
           const data = response.data.analysis || [];
-          setAnalysisData(data);
-          console.log("Fetched analysis data:", data);
+          console.log("Fetched analysis data:", data); // Debug log
+          setAnalysisData(data); // Set fresh data, overwriting previous
           if (data.length > 0) {
             generateInsights(data);
           } else {
@@ -85,11 +88,12 @@ const AnalysisPage = () => {
         setInsightsLoading(false);
       } finally {
         setLoading(false);
+        setIsFetched(true); // Mark as fetched
       }
     };
 
     fetchAnalysisData();
-  }, [expenseType]);
+  }, [expenseType]); // Dependency on expenseType only
 
   const generateInsights = async (data: AnalysisData[]) => {
     setInsightsLoading(true);
@@ -102,8 +106,8 @@ const AnalysisPage = () => {
         return;
       }
 
-      const categories = data.map((item) => item._id);
-      const amounts = data.map((item) => item.totalAmount);
+      const categories = data.map((item) => item._id || "Unknown");
+      const amounts = data.map((item) => item.totalAmount || 0);
 
       const token = localStorage.getItem("token");
       if (!token) {
