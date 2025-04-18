@@ -16,8 +16,6 @@ import {
 } from "chart.js";
 import LoadingCoin from "./LoadingCoin";
 import "./AnalysisPage.css";
-import type { JSX } from "react";
-
 const base = import.meta.env.VITE_BASE_URL;
 
 Chart.register(
@@ -66,22 +64,16 @@ const AnalysisPage = () => {
     const fetchAnalysisData = async () => {
       setLoading(true);
       setError(null);
-
+  
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("No authentication token found. Please log in.");
-        }
-
+        if (!token) throw new Error("No authentication token found. Please log in.");
+  
         const response = await axios.get(
           `${base}/api/expenses/analysis/${encodeURIComponent(expenseType)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-
+  
         if (response.data.success) {
           setAnalysisData(response.data.analysis);
           if (response.data.analysis.length > 0) {
@@ -91,19 +83,18 @@ const AnalysisPage = () => {
             setInsightsLoading(false);
           }
         } else {
-          throw new Error("Failed to fetch analysis data");
+          throw new Error(response.data.message || "Failed to fetch analysis data");
         }
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch analysis data";
-        console.error("Failed to fetch analysis data:", errorMessage);
+      } catch (err: any) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch analysis data";
+        console.error("Fetch error:", err.response?.data || err);
         setError(errorMessage);
         setInsightsLoading(false);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchAnalysisData();
   }, [expenseType]);
 
@@ -148,7 +139,7 @@ const AnalysisPage = () => {
         const cleanedInsights = response.data.insights
           .filter((insight: string) => insight.trim() && /^\d+\./.test(insight))
           .map((insight: string) => insight.trim());
-
+        
         setInsights(
           cleanedInsights.length > 0
             ? cleanedInsights
@@ -168,24 +159,6 @@ const AnalysisPage = () => {
     } finally {
       setInsightsLoading(false);
     }
-  };
-
-  // Function to parse Markdown-like bold text (**text**)
-  const parseInsightText = (text: string): JSX.Element => {
-    // Split text by ** to identify bold sections
-    const parts = text.split(/\*\*(.*?)\*\*/g);
-    return (
-      <>
-        {parts.map((part, index) => {
-          // Odd-indexed parts are bold (captured by the regex group)
-          if (index % 2 === 1) {
-            return <strong key={index}>{part}</strong>;
-          }
-          // Even-indexed parts are regular text
-          return <span key={index}>{part}</span>;
-        })}
-      </>
-    );
   };
 
   // Generate random colors for each category
@@ -369,21 +342,16 @@ const AnalysisPage = () => {
                     const isNumbered = /^\d+\./.test(insight);
                     if (isNumbered) {
                       const [number, ...rest] = insight.split(".");
-                      const insightText = rest.join(".").trim();
                       return (
                         <div key={index} className="insight-point">
                           <span className="insight-number">{number}.</span>
-                          <span className="insight-text">
-                            {parseInsightText(insightText)}
-                          </span>
+                          <span className="insight-text">{rest.join(".").trim()}</span>
                         </div>
                       );
                     }
                     return (
                       <div key={index} className="insight-point">
-                        <span className="insight-text">
-                          {parseInsightText(insight)}
-                        </span>
+                        <span className="insight-text">{insight}</span>
                       </div>
                     );
                   })}
