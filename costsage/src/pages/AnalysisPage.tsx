@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import {
@@ -36,6 +36,21 @@ interface AnalysisData {
   count: number;
 }
 
+interface ChartOptions {
+  responsive: boolean;
+  plugins: {
+    title: {
+      display: boolean;
+      text: string;
+    };
+  };
+  scales: {
+    y: {
+      beginAtZero: boolean;
+    };
+  };
+}
+
 const AnalysisPage = () => {
   const { expenseType } = useParams<{ expenseType: string }>();
   const [analysisData, setAnalysisData] = useState<AnalysisData[]>([]);
@@ -46,9 +61,21 @@ const AnalysisPage = () => {
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<"bar" | "line" | "pie">("bar");
   const navigate = useNavigate();
-  const [isFetched, setIsFetched] = useState(false); // Prevent re-fetch
+  const location = useLocation();
+  const [isFetched, setIsFetched] = useState(false);
 
   useEffect(() => {
+    const initialData = location.state?.analysis as AnalysisData[] || [];
+    const initialInsights = location.state?.insights as string[] || [];
+    if (initialData.length > 0 || initialInsights.length > 0) {
+      setAnalysisData(initialData);
+      setInsights(initialInsights);
+      setLoading(false);
+      setInsightsLoading(false);
+      setIsFetched(true);
+      return;
+    }
+
     if (!expenseType || isFetched) return;
 
     const fetchAnalysisData = async () => {
@@ -65,7 +92,7 @@ const AnalysisPage = () => {
         );
 
         if (response.data.success) {
-          const data = response.data.analysis || [];
+          const data = response.data.analysis as AnalysisData[] || [];
           console.log("Fetched analysis data:", JSON.stringify(data, null, 2));
           setAnalysisData(data);
           if (data.length > 0) {
@@ -89,7 +116,7 @@ const AnalysisPage = () => {
     };
 
     fetchAnalysisData();
-  }, [expenseType]);
+  }, [expenseType, location.state]);
 
   const generateInsights = async (data: AnalysisData[]) => {
     setInsightsLoading(true);
@@ -102,8 +129,8 @@ const AnalysisPage = () => {
         return;
       }
 
-      const categories = data.map((item) => item._id || "Unknown");
-      const amounts = data.map((item) => item.totalAmount || 0);
+      const categories = data.map((item: AnalysisData) => item._id || "Unknown");
+      const amounts = data.map((item: AnalysisData) => item.totalAmount || 0);
 
       const token = localStorage.getItem("token");
       if (!token) {
@@ -163,11 +190,11 @@ const AnalysisPage = () => {
   };
 
   const barChartData = {
-    labels: analysisData.map((item) => item._id || "Unknown"),
+    labels: analysisData.map((item: AnalysisData) => item._id || "Unknown"),
     datasets: [
       {
         label: "Total Amount",
-        data: analysisData.map((item) => item.totalAmount || 0),
+        data: analysisData.map((item: AnalysisData) => item.totalAmount || 0),
         backgroundColor: generateColors(analysisData.length),
         borderColor: analysisData.map(() => "rgba(0, 0, 0, 1)"),
         borderWidth: 1,
@@ -176,11 +203,11 @@ const AnalysisPage = () => {
   };
 
   const lineChartData = {
-    labels: analysisData.map((item) => item._id || "Unknown"),
+    labels: analysisData.map((item: AnalysisData) => item._id || "Unknown"),
     datasets: [
       {
         label: "Total Amount",
-        data: analysisData.map((item) => item.totalAmount || 0),
+        data: analysisData.map((item: AnalysisData) => item.totalAmount || 0),
         borderColor: "rgba(153, 102, 255, 1)",
         backgroundColor: "rgba(153, 102, 255, 0.2)",
         borderWidth: 2,
@@ -190,11 +217,11 @@ const AnalysisPage = () => {
   };
 
   const pieChartData = {
-    labels: analysisData.map((item) => item._id || "Unknown"),
+    labels: analysisData.map((item: AnalysisData) => item._id || "Unknown"),
     datasets: [
       {
         label: "Total Amount",
-        data: analysisData.map((item) => item.totalAmount || 0),
+        data: analysisData.map((item: AnalysisData) => item.totalAmount || 0),
         backgroundColor: [
           "rgba(255, 99, 132, 0.6)",
           "rgba(54, 162, 235, 0.6)",
@@ -214,7 +241,7 @@ const AnalysisPage = () => {
     ],
   };
 
-  const chartOptions = {
+  const chartOptions: ChartOptions = {
     responsive: true,
     plugins: {
       title: {
@@ -325,7 +352,7 @@ const AnalysisPage = () => {
 
             {!insightsLoading && insights.length > 0 ? (
               <div className="insights-content">
-                {insights.map((insight, index) => {
+                {insights.map((insight: string, index: number) => {
                   const isNumbered = /^\d+\./.test(insight);
                   if (isNumbered) {
                     const [number, ...rest] = insight.split(".");
@@ -354,3 +381,4 @@ const AnalysisPage = () => {
 };
 
 export default AnalysisPage;
+export type { AnalysisData }; // Updated to export type
