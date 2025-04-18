@@ -5,7 +5,6 @@ import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import LoadingCoin from "./LoadingCoin";
 import FullScreenLoading from "./FullScreenLoading";
-
 const base = import.meta.env.VITE_BASE_URL;
 
 interface Expense {
@@ -45,6 +44,7 @@ const ExpenseTracker = () => {
   const [freshStart, setFreshStart] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
 
+  // Normalize expenseType to match server enum
   const expenseTypeRaw = location.pathname
     .split("/")
     .filter(Boolean)[1]
@@ -361,10 +361,6 @@ const ExpenseTracker = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found. Please log in.");
-      }
-
       const response = await axios.get(
         `${base}/api/expenses/${encodeURIComponent(expenseType)}`,
         {
@@ -373,7 +369,7 @@ const ExpenseTracker = () => {
           },
         }
       );
-
+      
       if (response.data.success) {
         const formattedExpenses = response.data.expenses.map((expense: any) => ({
           _id: expense._id,
@@ -531,6 +527,18 @@ const ExpenseTracker = () => {
       const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
       const formattedExpenseType = expenseType.toLowerCase().replace(/\s+/g, "-");
 
+      // Validate expenseType
+      const validTypes = [
+        "full-expense-tracker",
+        "business-expense-tracker",
+        "personal-expense-tracker",
+        "daily-expense-tracker",
+        "other-expenses",
+      ];
+      if (!validTypes.includes(formattedExpenseType)) {
+        throw new Error(`Invalid expense type. Must be one of: ${validTypes.join(", ")}`);
+      }
+
       if (!username || !userEmail || !expensesToAnalyze.length) {
         throw new Error("Missing required fields: username, userEmail, or expenses");
       }
@@ -565,10 +573,10 @@ const ExpenseTracker = () => {
       );
       navigate(`/analysis/${formattedExpenseType}`);
     } catch (error: any) {
-      console.error("Error submitting data:", error);
-      alert(
-        error.response?.data?.message || "Failed to submit expenses for analysis. Please try again."
-      );
+    console.error("Error submitting data:", error);
+    alert(
+      error?.response?.data?.message || "Failed to submit expenses for analysis. Please try again."
+    );
     }
   };
 
@@ -622,6 +630,8 @@ const ExpenseTracker = () => {
     return Array.from(categories);
   };
 
+  const filteredExpenses = getFilteredExpenses();
+
   const calculateDaysBetween = (startDate: Date, endDate: Date) => {
     const differenceInTime = endDate.getTime() - startDate.getTime();
     const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
@@ -672,7 +682,6 @@ const ExpenseTracker = () => {
   };
 
   const exportToCSV = () => {
-    const filteredExpenses = getFilteredExpenses();
     if (filteredExpenses.length === 0) {
       alert("No expenses to export");
       return;
@@ -710,7 +719,6 @@ const ExpenseTracker = () => {
   };
 
   const summary = getExpenseSummary();
-  const filteredExpenses = getFilteredExpenses();
 
   return (
     <div className="expense-container">
@@ -751,100 +759,103 @@ const ExpenseTracker = () => {
         <div className="loading-state" style={{ padding: "30px", textAlign: "center" }}>
           <LoadingCoin size="medium" text="Loading your expenses..." />
         </div>
-      ) : showPreviousExpenseCard && expenses.length > 0 ? (
-        <motion.div
-          className="previous-expenses-card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{
-            background: "linear-gradient(135deg, #4f46e5, #6366f1)",
-            borderRadius: "16px",
-            padding: "30px",
-            color: "white",
-            margin: "20px auto",
-            maxWidth: "800px",
-            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h2 style={{ fontSize: "24px", marginBottom: "20px" }}>
-            Your Existing {capitalizedExpenseType} Expenses
-          </h2>
-          <div
+      ) : (
+        showPreviousExpenseCard &&
+        expenses.length > 0 && (
+          <motion.div
+            className="previous-expenses-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "20px",
+              background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+              borderRadius: "16px",
+              padding: "30px",
+              color: "white",
+              margin: "20px auto",
+              maxWidth: "800px",
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
             }}
           >
-            <div>
-              <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Total Expenses</h3>
-              <p style={{ fontSize: "24px", fontWeight: "bold" }}>{summary.count}</p>
-            </div>
-            <div>
-              <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Total Amount</h3>
-              <p style={{ fontSize: "24px", fontWeight: "bold" }}>
-                {formatCurrency(summary.totalAmount ?? 0)}
-              </p>
-            </div>
-            <div>
-              <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Top Category</h3>
-              <p style={{ fontSize: "20px", fontWeight: "bold" }}>
-                {summary.mostFrequentCategory}
-              </p>
-            </div>
-            <div>
-              <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Time Period</h3>
-              <p style={{ fontSize: "16px", fontWeight: "bold" }}>{summary.totalDays} days</p>
-            </div>
-          </div>
-          <div
-            style={{
-              marginTop: "30px",
-              display: "flex",
-              gap: "15px",
-              justifyContent: "center",
-            }}
-          >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setShowPreviousExpenseCard(false);
-                setShowExistingExpenses(true);
-                setFreshStart(false);
-              }}
+            <h2 style={{ fontSize: "24px", marginBottom: "20px" }}>
+              Your Existing {capitalizedExpenseType} Expenses
+            </h2>
+            <div
               style={{
-                background: "rgba(255,255,255,0.2)",
-                border: "1px solid rgba(255,255,255,0.4)",
-                borderRadius: "8px",
-                padding: "12px 24px",
-                color: "white",
-                fontWeight: "bold",
-                cursor: "pointer",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "20px",
               }}
             >
-              Continue with Existing Expenses
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleStartFresh}
+              <div>
+                <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Total Expenses</h3>
+                <p style={{ fontSize: "24px", fontWeight: "bold" }}>{summary.count}</p>
+              </div>
+              <div>
+                <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Total Amount</h3>
+                <p style={{ fontSize: "24px", fontWeight: "bold" }}>
+                  {formatCurrency(summary.totalAmount ?? 0)}
+                </p>
+              </div>
+              <div>
+                <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Top Category</h3>
+                <p style={{ fontSize: "20px", fontWeight: "bold" }}>
+                  {summary.mostFrequentCategory}
+                </p>
+              </div>
+              <div>
+                <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Time Period</h3>
+                <p style={{ fontSize: "16px", fontWeight: "bold" }}>{summary.totalDays} days</p>
+              </div>
+            </div>
+            <div
               style={{
-                background: "white",
-                border: "none",
-                borderRadius: "8px",
-                padding: "12px 24px",
-                color: "#4f46e5",
-                fontWeight: "bold",
-                cursor: "pointer",
+                marginTop: "30px",
+                display: "flex",
+                gap: "15px",
+                justifyContent: "center",
               }}
             >
-              Start Fresh with New Expenses
-            </motion.button>
-          </div>
-        </motion.div>
-      ) : null}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setShowPreviousExpenseCard(false);
+                  setShowExistingExpenses(true);
+                  setFreshStart(false);
+                }}
+                style={{
+                  background: "rgba(255,255,255,0.2)",
+                  border: "1px solid rgba(255,255,255,0.4)",
+                  borderRadius: "8px",
+                  padding: "12px 24px",
+                  color: "white",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Continue with Existing Expenses
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleStartFresh}
+                style={{
+                  background: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "12px 24px",
+                  color: "#4f46e5",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Start Fresh with New Expenses
+              </motion.button>
+            </div>
+          </motion.div>
+        )
+      )}
 
       {!showPreviousExpenseCard && (
         <div className="expense-content">
@@ -910,7 +921,7 @@ const ExpenseTracker = () => {
                   >
                     {getFilteredSuggestions().map((suggestion, index) => (
                       <motion.div
-                        key={`${suggestion}-${index}`}
+                        key={`suggestion-${index}`}
                         className="suggestion-item"
                         onClick={() => handleCategorySelect(suggestion)}
                         whileHover={{ backgroundColor: "#f0f0f0" }}
@@ -1011,7 +1022,7 @@ const ExpenseTracker = () => {
                     >
                       <option value="">All Categories</option>
                       {getUniqueCategories().map((cat, index) => (
-                        <option key={`${category}-${index}`} value={cat}>
+                        <option key={`category-${index}`} value={cat}>
                           {cat}
                         </option>
                       ))}
@@ -1048,7 +1059,7 @@ const ExpenseTracker = () => {
                     <tbody>
                       {filteredExpenses.map((expense, index) => (
                         <motion.tr
-                          key={`${expense._id}-${index}`}
+                          key={`expense-${expense._id}-${index}`}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
@@ -1097,154 +1108,154 @@ const ExpenseTracker = () => {
               </motion.div>
             </motion.div>
           )}
-
-          {(!showPreviousExpenseCard && expenses.length > 0) && (
-            <motion.div
-              className="action-buttons"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <NavLink to={`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`}>
-                <motion.button
-                  className="analysis-button"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => submitForAnalysis(expenseType)}
-                  disabled={expenses.length === 0}
-                >
-                  Analyze Expenses
-                </motion.button>
-              </NavLink>
-            </motion.div>
-          )}
-
-          {(!showPreviousExpenseCard && showExistingExpenses && expenses.length > 0) && (
-            <motion.div
-              style={{ textAlign: "center", margin: "20px 0" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              <motion.button
-                style={{
-                  background: "transparent",
-                  border: "1px solid #4f46e5",
-                  color: "#4f46e5",
-                  padding: "10px 20px",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  fontSize: "14px",
-                }}
-                whileHover={{ scale: 1.05, backgroundColor: "rgba(79, 70, 229, 0.1)" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setExpenses([]);
-                  setShowExistingExpenses(false);
-                }}
-              >
-                Start Fresh (Hide Existing Expenses)
-              </motion.button>
-            </motion.div>
-          )}
-
-          {(!showPreviousExpenseCard && !showExistingExpenses && expenses.length > 0) && (
-            <motion.div
-              style={{ textAlign: "center", margin: "20px 0" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              <motion.button
-                style={{
-                  background: "transparent",
-                  border: "1px solid #4f46e5",
-                  color: "#4f46e5",
-                  padding: "10px 20px",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  fontSize: "14px",
-                }}
-                whileHover={{ scale: 1.05, backgroundColor: "rgba(79, 70, 229, 0.1)" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  fetchExpenses();
-                  setShowExistingExpenses(true);
-                }}
-              >
-                Show Existing Expenses
-              </motion.button>
-            </motion.div>
-          )}
-
-          {!showPreviousExpenseCard && (
-            <motion.div
-              className="chat-expense-option"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              style={{
-                margin: "30px auto",
-                padding: "20px",
-                maxWidth: "800px",
-                backgroundColor: "#f8fafc",
-                borderRadius: "12px",
-                boxShadow: "0 4px 15px rgba(0, 0, 0, 0.05)",
-              }}
-            >
-              <h3 style={{ marginBottom: "15px", fontSize: "18px" }}>
-                Want to add expenses by chat?
-              </h3>
-              <p style={{ marginBottom: "20px", color: "#6b7280" }}>
-                Describe your expenses in natural language, and our AI will extract the details for you.
-              </p>
-              <NavLink to="/chat" style={{ textDecoration: "none" }}>
-                <motion.button
-                  style={{
-                    background: "linear-gradient(135deg, #4361ee, #00d4ff)",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "12px 24px",
-                    color: "white",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <span>Try AI Chat Input</span>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z"
-                      stroke="white"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </motion.button>
-              </NavLink>
-            </motion.div>
-          )}
-
-          <FullScreenLoading
-            message="Deleting expense..."
-            coinSize="medium"
-            isLoading={deleting}
-          />
         </div>
       )}
+
+      {(!showPreviousExpenseCard && expenses.length > 0) && (
+        <motion.div
+          className="action-buttons"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <NavLink to={`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`}>
+            <motion.button
+              className="analysis-button"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => submitForAnalysis(expenseType)}
+              disabled={expenses.length === 0}
+            >
+              Analyze Expenses
+            </motion.button>
+          </NavLink>
+        </motion.div>
+      )}
+
+      {(!showPreviousExpenseCard && showExistingExpenses && expenses.length > 0) && (
+        <motion.div
+          style={{ textAlign: "center", margin: "20px 0" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
+          <motion.button
+            style={{
+              background: "transparent",
+              border: "1px solid #4f46e5",
+              color: "#4f46e5",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+            whileHover={{ scale: 1.05, backgroundColor: "rgba(79, 70, 229, 0.1)" }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setExpenses([]);
+              setShowExistingExpenses(false);
+            }}
+          >
+            Start Fresh (Hide Existing Expenses)
+          </motion.button>
+        </motion.div>
+      )}
+
+      {(!showPreviousExpenseCard && !showExistingExpenses && expenses.length > 0) && (
+        <motion.div
+          style={{ textAlign: "center", margin: "20px 0" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
+          <motion.button
+            style={{
+              background: "transparent",
+              border: "1px solid #4f46e5",
+              color: "#4f46e5",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+            whileHover={{ scale: 1.05, backgroundColor: "rgba(79, 70, 229, 0.1)" }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              fetchExpenses();
+              setShowExistingExpenses(true);
+            }}
+          >
+            Show Existing Expenses
+          </motion.button>
+        </motion.div>
+      )}
+
+      {!showPreviousExpenseCard && (
+        <motion.div
+          className="chat-expense-option"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          style={{
+            margin: "30px auto",
+            padding: "20px",
+            maxWidth: "800px",
+            backgroundColor: "#f8fafc",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.05)",
+          }}
+        >
+          <h3 style={{ marginBottom: "15px", fontSize: "18px" }}>
+            Want to add expenses by chat?
+          </h3>
+          <p style={{ marginBottom: "20px", color: "#6b7280" }}>
+            Describe your expenses in natural language, and our AI will extract the details for you.
+          </p>
+          <NavLink to={`/chat`} style={{ textDecoration: "none" }}>
+            <motion.button
+              style={{
+                background: "linear-gradient(135deg, #4361ee, #00d4ff)",
+                border: "none",
+                borderRadius: "8px",
+                padding: "12px 24px",
+                color: "white",
+                fontWeight: "bold",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span>Try AI Chat Input</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </motion.button>
+          </NavLink>
+        </motion.div>
+      )}
+
+      <FullScreenLoading
+        message="Deleting expense..."
+        coinSize="medium"
+        isLoading={deleting}
+      />
     </div>
   );
 };
