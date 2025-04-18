@@ -64,19 +64,20 @@ const AnalysisPage = () => {
     const fetchAnalysisData = async () => {
       setLoading(true);
       setError(null);
-  
+
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No authentication token found. Please log in.");
-  
+
         const response = await axios.get(
           `${base}/api/expenses/analysis/${encodeURIComponent(expenseType)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-  
+
+        console.log("API Response:", response.data);
         if (response.data.success) {
-          setAnalysisData(response.data.analysis);
-          if (response.data.analysis.length > 0) {
+          setAnalysisData(response.data.analysis || []);
+          if ((response.data.analysis || []).length > 0) {
             generateInsights(response.data.analysis);
           } else {
             setInsights(["No expense data available to generate insights."]);
@@ -87,14 +88,18 @@ const AnalysisPage = () => {
         }
       } catch (err: any) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch analysis data";
-        console.error("Fetch error:", err.response?.data || err);
+        console.error("Fetch error:", {
+          message: errorMessage,
+          response: err.response?.data,
+          status: err.response?.status,
+        });
         setError(errorMessage);
         setInsightsLoading(false);
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchAnalysisData();
   }, [expenseType]);
 
@@ -103,7 +108,6 @@ const AnalysisPage = () => {
     setInsightsError(null);
 
     try {
-      // Validate data
       if (!data || data.length === 0) {
         setInsights(["No expense data available to generate insights."]);
         setInsightsLoading(false);
@@ -113,47 +117,27 @@ const AnalysisPage = () => {
       const categories = data.map((item) => item._id);
       const amounts = data.map((item) => item.totalAmount);
 
-      // Call backend API for Groq insights
       const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found. Please log in.");
-      }
+      if (!token) throw new Error("No authentication token found. Please log in.");
 
       const response = await axios.post(
         `${base}/api/insights`,
-        {
-          expenseType,
-          categories,
-          amounts,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { expenseType, categories, amounts },
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
       );
 
+      console.log("Insights Response:", response.data);
       if (response.data.success) {
-        // Expect insights as an array of strings
         const cleanedInsights = response.data.insights
           .filter((insight: string) => insight.trim() && /^\d+\./.test(insight))
           .map((insight: string) => insight.trim());
-        
-        setInsights(
-          cleanedInsights.length > 0
-            ? cleanedInsights
-            : ["No actionable insights could be generated."]
-        );
+        setInsights(cleanedInsights.length > 0 ? cleanedInsights : ["No actionable insights could be generated."]);
       } else {
         throw new Error(response.data.message || "Failed to generate insights");
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to generate insights. Please try again later.";
-      console.error("Error generating insights:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate insights. Please try again later.";
+      console.error("Insights error:", err);
       setInsightsError(errorMessage);
       setInsights(["Unable to generate insights at this time."]);
     } finally {
@@ -161,7 +145,6 @@ const AnalysisPage = () => {
     }
   };
 
-  // Generate random colors for each category
   const generateColors = (count: number) => {
     const colors = [];
     for (let i = 0; i < count; i++) {
@@ -173,7 +156,6 @@ const AnalysisPage = () => {
     return colors;
   };
 
-  // Data for Bar Chart
   const barChartData = {
     labels: analysisData.map((item) => item._id),
     datasets: [
@@ -187,7 +169,6 @@ const AnalysisPage = () => {
     ],
   };
 
-  // Data for Line Chart
   const lineChartData = {
     labels: analysisData.map((item) => item._id),
     datasets: [
@@ -202,7 +183,6 @@ const AnalysisPage = () => {
     ],
   };
 
-  // Data for Pie Chart
   const pieChartData = {
     labels: analysisData.map((item) => item._id),
     datasets: [
@@ -228,7 +208,6 @@ const AnalysisPage = () => {
     ],
   };
 
-  // Common chart options
   const chartOptions = {
     responsive: true,
     plugins: {
@@ -265,63 +244,54 @@ const AnalysisPage = () => {
 
         {!loading && !error && (
           <>
-            {/* Tabs for Chart Selection */}
-            <div className="chart-tabs">
-              <button
-                className={`tab-button ${activeChart === "bar" ? "active" : ""}`}
-                onClick={() => setActiveChart("bar")}
-                style={{
-                  background:
-                    activeChart === "bar"
-                      ? "linear-gradient(135deg, #4361ee, #00d4ff)"
-                      : "",
-                  color: activeChart === "bar" ? "white" : "",
-                }}
-              >
-                Bar Chart
-              </button>
-              <button
-                className={`tab-button ${activeChart === "line" ? "active" : ""}`}
-                onClick={() => setActiveChart("line")}
-                style={{
-                  background:
-                    activeChart === "line"
-                      ? "linear-gradient(135deg, #4361ee, #00d4ff)"
-                      : "",
-                  color: activeChart === "line" ? "white" : "",
-                }}
-              >
-                Line Chart
-              </button>
-              <button
-                className={`tab-button ${activeChart === "pie" ? "active" : ""}`}
-                onClick={() => setActiveChart("pie")}
-                style={{
-                  background:
-                    activeChart === "pie"
-                      ? "linear-gradient(135deg, #4361ee, #00d4ff)"
-                      : "",
-                  color: activeChart === "pie" ? "white" : "",
-                }}
-              >
-                Pie Chart
-              </button>
-            </div>
+            {analysisData.length === 0 && (
+              <div className="no-data-message">
+                <p>No data available for analysis. Add expenses to see charts and insights.</p>
+              </div>
+            )}
+            {analysisData.length > 0 && (
+              <>
+                <div className="chart-tabs">
+                  <button
+                    className={`tab-button ${activeChart === "bar" ? "active" : ""}`}
+                    onClick={() => setActiveChart("bar")}
+                    style={{
+                      background: activeChart === "bar" ? "linear-gradient(135deg, #4361ee, #00d4ff)" : "",
+                      color: activeChart === "bar" ? "white" : "",
+                    }}
+                  >
+                    Bar Chart
+                  </button>
+                  <button
+                    className={`tab-button ${activeChart === "line" ? "active" : ""}`}
+                    onClick={() => setActiveChart("line")}
+                    style={{
+                      background: activeChart === "line" ? "linear-gradient(135deg, #4361ee, #00d4ff)" : "",
+                      color: activeChart === "line" ? "white" : "",
+                    }}
+                  >
+                    Line Chart
+                  </button>
+                  <button
+                    className={`tab-button ${activeChart === "pie" ? "active" : ""}`}
+                    onClick={() => setActiveChart("pie")}
+                    style={{
+                      background: activeChart === "pie" ? "linear-gradient(135deg, #4361ee, #00d4ff)" : "",
+                      color: activeChart === "pie" ? "white" : "",
+                    }}
+                  >
+                    Pie Chart
+                  </button>
+                </div>
 
-            {/* Render Active Chart */}
-            <div className="chart-container">
-              {activeChart === "bar" && (
-                <Bar data={barChartData} options={chartOptions} />
-              )}
-              {activeChart === "line" && (
-                <Line data={lineChartData} options={chartOptions} />
-              )}
-              {activeChart === "pie" && (
-                <Pie data={pieChartData} options={chartOptions} />
-              )}
-            </div>
+                <div className="chart-container">
+                  {activeChart === "bar" && <Bar data={barChartData} options={chartOptions} />}
+                  {activeChart === "line" && <Line data={lineChartData} options={chartOptions} />}
+                  {activeChart === "pie" && <Pie data={pieChartData} options={chartOptions} />}
+                </div>
+              </>
+            )}
 
-            {/* Improved AI Insights Card */}
             <div className="insights-card">
               <div className="insights-header">
                 <h2>AI Insights</h2>
@@ -332,9 +302,7 @@ const AnalysisPage = () => {
                 )}
               </div>
 
-              {insightsError && (
-                <p className="error-message">Error: {insightsError}</p>
-              )}
+              {insightsError && <p className="error-message">Error: {insightsError}</p>}
 
               {!insightsLoading && insights.length > 0 ? (
                 <div className="insights-content">
