@@ -236,13 +236,27 @@ const ExpenseTracker = () => {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authentication token found. Please log in.");
+  
+      // Debug initial values
+      console.log("Before submission - username:", username, "userEmail:", userEmail, "expenses:", expenses, "temporaryExpenses:", temporaryExpenses, "freshStart:", freshStart);
+  
       const existingExpensesIds = expenses.map((e) => e._id).filter((id) => id);
       const expensesToAnalyze = freshStart
         ? temporaryExpenses
-        : expenses.filter((e) => !e._id || !existingExpensesIds.includes(e._id)); // Only new unsaved
+        : expenses.filter((e) => !e._id || !existingExpensesIds.includes(e._id));
+  
+      if (!username || !userEmail) {
+        throw new Error("Missing required fields: username or userEmail not set. Please ensure you are logged in.");
+      }
+  
+      if (!expensesToAnalyze.length) {
+        throw new Error("No expenses to analyze. Please add some expenses first.");
+      }
+  
       const formattedExpenseTypeForServer = expenseType;
       const formattedExpenseTypeForUrl = expenseType.toLowerCase().replace(/\s+/g, "-");
-
+  
       const validTypes = [
         "full expense tracker",
         "business expense tracker",
@@ -253,21 +267,14 @@ const ExpenseTracker = () => {
       if (!validTypes.includes(formattedExpenseTypeForServer.toLowerCase())) {
         throw new Error(`Invalid expense type. Must be one of: ${validTypes.join(", ")}`);
       }
-
-      if (!username || !userEmail || !expensesToAnalyze.length) {
-        throw new Error("Missing required fields: username, userEmail, or expenses");
-      }
-      if (!token) {
-        throw new Error("No authentication token found. Please log in.");
-      }
-
+  
       console.log("Submitting for analysis:", {
         username,
         userEmail,
         expenseType: formattedExpenseTypeForServer,
         expenses: expensesToAnalyze,
       });
-
+  
       const response = await axios.post(
         `${base}/api/expenses/analyze`,
         {
@@ -286,15 +293,16 @@ const ExpenseTracker = () => {
         navigate(`/analysis/${formattedExpenseTypeForUrl}`, { replace: true });
       }
     } catch (error: any) {
-      console.error("Error submitting data:", error);
+      console.error("Error submitting data:", error.message, error.response?.data);
       alert(
-        error.response?.data?.message || "Failed to submit expenses for analysis. Please try again."
+        error.message || "Failed to submit expenses for analysis. Please try again."
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
