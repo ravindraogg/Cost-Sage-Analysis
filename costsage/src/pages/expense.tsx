@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent, SetStateAction } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import "./Expense.css";
 import axios from "axios";
@@ -232,76 +232,77 @@ const ExpenseTracker = () => {
     }
   };
 
-  const submitForAnalysis = async (expenseType: string) => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found. Please log in.");
-  
-      // Debug initial values
-      console.log("Before submission - username:", username, "userEmail:", userEmail, "expenses:", expenses, "temporaryExpenses:", temporaryExpenses, "freshStart:", freshStart);
-  
-      const expensesToAnalyze = freshStart
-        ? temporaryExpenses
-        : expenses; // Use all expenses when not freshStart
-  
-      if (!username || !userEmail) {
-        throw new Error("Missing required fields: username or userEmail not set. Please ensure you are logged in.");
-      }
-  
-      if (!expensesToAnalyze.length) {
-        throw new Error("No expenses to analyze. Please add some expenses first.");
-      }
-  
-      const formattedExpenseTypeForServer = expenseType;
-      const formattedExpenseTypeForUrl = expenseType.toLowerCase().replace(/\s+/g, "-");
-  
-      const validTypes = [
-        "full expense tracker",
-        "business expense tracker",
-        "personal expense tracker",
-        "daily expense tracker",
-        "other expenses",
-      ];
-      if (!validTypes.includes(formattedExpenseTypeForServer.toLowerCase())) {
-        throw new Error(`Invalid expense type. Must be one of: ${validTypes.join(", ")}`);
-      }
-  
-      console.log("Submitting for analysis:", {
+ const submitForAnalysis = async (expenseType: string) => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found. Please log in.");
+
+    // Debug initial values
+    console.log("Before submission - username:", username, "userEmail:", userEmail, "expenses:", expenses, "temporaryExpenses:", temporaryExpenses, "freshStart:", freshStart);
+
+    const expensesToAnalyze = freshStart
+      ? temporaryExpenses
+      : expenses; // Use all expenses when not freshStart
+
+    if (!username || !userEmail) {
+      throw new Error("Missing required fields: username or userEmail not set. Please ensure you are logged in.");
+    }
+
+    if (!expensesToAnalyze.length) {
+      console.log("No expenses to analyze. Please add some expenses first.");
+      alert("No expenses to analyze. Please add some expenses first.");
+      return; // Exit the function early if no expenses
+    }
+
+    const formattedExpenseTypeForServer = expenseType;
+    const formattedExpenseTypeForUrl = expenseType.toLowerCase().replace(/\s+/g, "-");
+
+    const validTypes = [
+      "full expense tracker",
+      "business expense tracker",
+      "personal expense tracker",
+      "daily expense tracker",
+      "other expenses",
+    ];
+    if (!validTypes.includes(formattedExpenseTypeForServer.toLowerCase())) {
+      throw new Error(`Invalid expense type. Must be one of: ${validTypes.join(", ")}`);
+    }
+
+    console.log("Submitting for analysis:", {
+      username,
+      userEmail,
+      expenseType: formattedExpenseTypeForServer,
+      expenses: expensesToAnalyze,
+    });
+
+    const response = await axios.post(
+      `${base}/api/expenses/analyze`,
+      {
         username,
         userEmail,
         expenseType: formattedExpenseTypeForServer,
-        expenses: expensesToAnalyze,
-      });
-  
-      const response = await axios.post(
-        `${base}/api/expenses/analyze`,
-        {
-          username,
+        expenses: expensesToAnalyze.map((expense) => ({
+          ...expense,
           userEmail,
           expenseType: formattedExpenseTypeForServer,
-          expenses: expensesToAnalyze.map((expense) => ({
-            ...expense,
-            userEmail,
-            expenseType: formattedExpenseTypeForServer,
-          })),
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (response.data.success) {
-        navigate(`/analysis/${formattedExpenseTypeForUrl}`, { replace: true });
-      }
-    } catch (error: any) {
-      console.error("Error submitting data:", error.message, error.response?.data);
-      alert(
-        error.message || "Failed to submit expenses for analysis. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
+        })),
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (response.data.success) {
+      navigate(`/analysis/${formattedExpenseTypeForUrl}`, { replace: true });
     }
-  };
-  
+  } catch (error: any) {
+    console.error("Error submitting data:", error.message, error.response?.data);
+    alert(
+      error.message || "Failed to submit expenses for analysis. Please try again."
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -597,7 +598,7 @@ const ExpenseTracker = () => {
               type="text"
               placeholder="Enter a brief description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e: { target: { value: SetStateAction<string>; }; }) => setDescription(e.target.value)}
               className="form-input"
             />
             <label className="input-label">Date</label>
@@ -605,7 +606,7 @@ const ExpenseTracker = () => {
               whileFocus={{ scale: 1.02 }}
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e: { target: { value: SetStateAction<string>; }; }) => setDate(e.target.value)}
               className="form-input"
             />
             <motion.button
