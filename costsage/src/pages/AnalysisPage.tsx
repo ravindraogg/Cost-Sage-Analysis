@@ -31,7 +31,7 @@ Chart.register(
 );
 
 interface AnalysisData {
-  _id: string;
+  _id: string; // Category
   totalAmount: number;
   count: number;
 }
@@ -46,7 +46,7 @@ const AnalysisPage = () => {
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<"bar" | "line" | "pie">("bar");
   const navigate = useNavigate();
-  const [isFetched, setIsFetched] = useState(false); // Flag to prevent re-fetch
+  const [isFetched, setIsFetched] = useState(false); // Prevent re-fetch
 
   useEffect(() => {
     if (!expenseType || isFetched) return;
@@ -66,8 +66,8 @@ const AnalysisPage = () => {
 
         if (response.data.success) {
           const data = response.data.analysis || [];
-          console.log("Fetched analysis data:", data); // Debug log
-          setAnalysisData(data); // Set fresh data, overwriting previous
+          console.log("Fetched analysis data:", JSON.stringify(data, null, 2)); // Detailed log
+          setAnalysisData(data);
           if (data.length > 0) {
             generateInsights(data);
           } else {
@@ -88,7 +88,7 @@ const AnalysisPage = () => {
         setInsightsLoading(false);
       } finally {
         setLoading(false);
-        setIsFetched(true); // Mark as fetched
+        setIsFetched(true);
       }
     };
 
