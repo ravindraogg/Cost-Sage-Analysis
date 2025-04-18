@@ -49,7 +49,6 @@ const AnalysisPage = () => {
   const [activeChart, setActiveChart] = useState<"bar" | "line" | "pie">("bar");
   const navigate = useNavigate();
 
-  // Handle undefined expenseType
   if (!expenseType) {
     return (
       <div className="analysis-container">
@@ -84,6 +83,7 @@ const AnalysisPage = () => {
 
         if (response.data.success) {
           setAnalysisData(response.data.analysis);
+          console.log("analysisData state:", response.data.analysis);
           if (response.data.analysis.length > 0) {
             generateInsights(response.data.analysis);
           } else {
@@ -112,7 +112,6 @@ const AnalysisPage = () => {
     setInsightsError(null);
 
     try {
-      // Validate data
       if (!data || data.length === 0) {
         setInsights(["No expense data available to generate insights."]);
         setInsightsLoading(false);
@@ -122,7 +121,6 @@ const AnalysisPage = () => {
       const categories = data.map((item) => item._id);
       const amounts = data.map((item) => item.totalAmount);
 
-      // Call backend API for Groq insights
       const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("No authentication token found. Please log in.");
@@ -144,10 +142,11 @@ const AnalysisPage = () => {
       );
 
       if (response.data.success) {
-        // Expect insights as an array of strings
-        const cleanedInsights = response.data.insights
-          .filter((insight: string) => insight.trim() && /^\d+\./.test(insight))
-          .map((insight: string) => insight.trim());
+        const insightsText = response.data.insights;
+        const cleanedInsights = insightsText
+          .split("\n")
+          .filter((line: string) => line.trim() && /^\d+\./.test(line))
+          .map((line: string) => line.trim());
 
         setInsights(
           cleanedInsights.length > 0
@@ -171,25 +170,20 @@ const AnalysisPage = () => {
     }
   };
 
-  // Function to parse Markdown-like bold text (**text**)
   const parseInsightText = (text: string): JSX.Element => {
-    // Split text by ** to identify bold sections
     const parts = text.split(/\*\*(.*?)\*\*/g);
     return (
       <>
         {parts.map((part, index) => {
-          // Odd-indexed parts are bold (captured by the regex group)
           if (index % 2 === 1) {
             return <strong key={index}>{part}</strong>;
           }
-          // Even-indexed parts are regular text
           return <span key={index}>{part}</span>;
         })}
       </>
     );
   };
 
-  // Generate random colors for each category
   const generateColors = (count: number) => {
     const colors = [];
     for (let i = 0; i < count; i++) {
@@ -201,7 +195,6 @@ const AnalysisPage = () => {
     return colors;
   };
 
-  // Data for Bar Chart
   const barChartData = {
     labels: analysisData.map((item) => item._id),
     datasets: [
@@ -215,7 +208,6 @@ const AnalysisPage = () => {
     ],
   };
 
-  // Data for Line Chart
   const lineChartData = {
     labels: analysisData.map((item) => item._id),
     datasets: [
@@ -230,7 +222,6 @@ const AnalysisPage = () => {
     ],
   };
 
-  // Data for Pie Chart
   const pieChartData = {
     labels: analysisData.map((item) => item._id),
     datasets: [
@@ -256,7 +247,6 @@ const AnalysisPage = () => {
     ],
   };
 
-  // Common chart options
   const chartOptions = {
     responsive: true,
     plugins: {
@@ -293,7 +283,6 @@ const AnalysisPage = () => {
 
         {!loading && !error && (
           <>
-            {/* Tabs for Chart Selection */}
             <div className="chart-tabs">
               <button
                 className={`tab-button ${activeChart === "bar" ? "active" : ""}`}
@@ -336,7 +325,6 @@ const AnalysisPage = () => {
               </button>
             </div>
 
-            {/* Render Active Chart */}
             <div className="chart-container">
               {activeChart === "bar" && (
                 <Bar data={barChartData} options={chartOptions} />
@@ -349,7 +337,6 @@ const AnalysisPage = () => {
               )}
             </div>
 
-            {/* Improved AI Insights Card */}
             <div className="insights-card">
               <div className="insights-header">
                 <h2>AI Insights</h2>
