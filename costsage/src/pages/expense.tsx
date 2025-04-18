@@ -1,6 +1,6 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import "./expense.css";
+import "./Expense.css";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import LoadingCoin from "./LoadingCoin";
@@ -44,37 +44,293 @@ const ExpenseTracker = () => {
   const [freshStart, setFreshStart] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
 
+  // Normalize expenseType to match server enum
   const expenseTypeRaw = location.pathname
     .split("/")
     .filter(Boolean)[1]
     .replace(/-/g, " ")
     .toLowerCase();
 
-  const expenseTypeMap: { [key: string]: { display: string; server: string } } = {
-    "business expense": { display: "Business Expenses", server: "business expense tracker" },
-    "personal expense": { display: "Personal Expenses", server: "personal expense tracker" },
-    "daily expense": { display: "Daily Expenses", server: "daily expense tracker" },
-    "full expense": { display: "Full Expenses", server: "full expense tracker" },
-    "other expenses": { display: "Other Expenses", server: "other expenses" },
+  const expenseTypeMap: { [key: string]: string } = {
+    "business expense tracker": "business expense tracker",
+    "personal expense tracker": "personal expense tracker",
+    "daily expense tracker": "daily expense tracker",
+    "full expense tracker": "full expense tracker",
+    "other expenses": "other expenses",
   };
 
-  const expenseTypeConfig = expenseTypeMap[expenseTypeRaw] || expenseTypeMap["other expenses"];
-  const expenseType = expenseTypeConfig.server;
-  const capitalizedExpenseType = expenseTypeConfig.display;
+  const expenseType = expenseTypeMap[expenseTypeRaw] || "other expenses";
+
+  const capitalizedExpenseType = expenseType
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 
   const expenseCategories: ExpenseCategory = {
     business: [
-      "Office Supplies", "Software Subscriptions", "Advertising", "Legal Services", "Business Travel",
+      "Office Supplies",
+      "Office Furniture",
+      "Office Equipment",
+      "Printing & Stationery",
+      "Office Snacks",
+      "Office Maintenance",
+      "Office Decoration",
+      "Office Security",
+      "Software Subscriptions",
+      "Hardware",
+      "IT Services",
+      "Cloud Services",
+      "Cybersecurity",
+      "Tech Support",
+      "Website Expenses",
+      "Mobile Apps",
+      "Advertising",
+      "Digital Marketing",
+      "Print Marketing",
+      "Social Media Marketing",
+      "Event Marketing",
+      "Trade Shows",
+      "PR Expenses",
+      "Sales Materials",
+      "Legal Services",
+      "Accounting Services",
+      "Consulting Fees",
+      "Professional Training",
+      "Recruitment",
+      "Background Checks",
+      "Payroll Services",
+      "HR Services",
+      "Business Travel",
+      "Client Meetings",
+      "Conference Expenses",
+      "Vehicle Expenses",
+      "Fuel",
+      "Parking",
+      "Travel Insurance",
+      "Accommodation",
+      "Electricity",
+      "Water",
+      "Internet",
+      "Phone Services",
+      "Cleaning Services",
+      "Waste Management",
+      "Security Services",
+      "Insurance",
+      "Bank Charges",
+      "Transaction Fees",
+      "Loan Payments",
+      "Credit Card Fees",
+      "Investment Expenses",
+      "Tax Payments",
+      "Financial Advisory",
+      "Currency Exchange",
+      "Research & Development",
+      "Patents & Trademarks",
+      "Employee Benefits",
+      "Team Building",
+      "Office Rent",
+      "Business Insurance",
+      "Business Licenses",
+      "Membership Fees",
+      "Subscriptions",
+      "Equipment Rental",
+      "Maintenance & Repairs",
+      "Business Meals",
+      "Client Entertainment",
+      "Office Utilities",
+      "Shipping & Postage",
     ],
-    personal: ["Groceries", "Rent/Mortgage", "Car Insurance", "Health Insurance", "Movies"],
-    daily: ["Breakfast", "Lunch", "Dinner", "Bus Fare", "Toiletries"],
+    personal: [
+      "Groceries",
+      "Restaurants",
+      "Fast Food",
+      "Coffee Shops",
+      "Food Delivery",
+      "Specialty Foods",
+      "Alcohol & Bars",
+      "Snacks",
+      "Rent/Mortgage",
+      "Property Tax",
+      "Home Insurance",
+      "Home Maintenance",
+      "Home Improvement",
+      "Furniture",
+      "Home Decor",
+      "Cleaning Supplies",
+      "Public Transport",
+      "Car Payment",
+      "Car Insurance",
+      "Fuel",
+      "Car Maintenance",
+      "Parking",
+      "Ride Sharing",
+      "Bicycle Expenses",
+      "Health Insurance",
+      "Doctor Visits",
+      "Medications",
+      "Dental Care",
+      "Vision Care",
+      "Gym Membership",
+      "Sports Equipment",
+      "Wellness Products",
+      "Movies",
+      "Games",
+      "Books",
+      "Music",
+      "Streaming Services",
+      "Concerts",
+      "Sports Events",
+      "Hobbies",
+      "Clothing",
+      "Electronics",
+      "Personal Care",
+      "Home Goods",
+      "Gifts",
+      "Apps & Software",
+      "Online Subscriptions",
+      "Beauty Products",
+      "Tuition",
+      "Books & Supplies",
+      "Online Courses",
+      "Training Programs",
+      "Professional Development",
+      "Language Learning",
+      "Educational Apps",
+      "School Activities",
+      "Pet Care",
+      "Child Care",
+      "Family Activities",
+      "Vacation & Travel",
+      "Emergency Fund",
+      "Savings",
+      "Investments",
+      "Charitable Donations",
+      "Personal Loans",
+      "Credit Card Payments",
+      "Bank Fees",
+      "Tax Preparation",
+      "Life Insurance",
+      "Identity Protection",
+      "Legal Services",
+      "Personal Gifts",
+    ],
+    daily: [
+      "Breakfast",
+      "Lunch",
+      "Dinner",
+      "Coffee/Tea",
+      "Snacks",
+      "Beverages",
+      "Street Food",
+      "Restaurant Meals",
+      "Bus Fare",
+      "Train Fare",
+      "Taxi",
+      "Fuel",
+      "Parking",
+      "Bike Sharing",
+      "Car Sharing",
+      "Metro Pass",
+      "Toiletries",
+      "Hygiene Products",
+      "Cosmetics",
+      "Hair Care",
+      "Skin Care",
+      "Personal Grooming",
+      "Health Supplies",
+      "Medications",
+      "Office Lunch",
+      "Work Supplies",
+      "Printing",
+      "Coffee Breaks",
+      "Meeting Expenses",
+      "Work Transport",
+      "Work Snacks",
+      "Office Equipment",
+      "Daily News",
+      "Magazine",
+      "Quick Games",
+      "Music Services",
+      "Video Content",
+      "Social Activities",
+      "Quick Hobbies",
+      "Entertainment Apps",
+      "Convenience Store",
+      "Quick Shopping",
+      "Daily Necessities",
+      "Small Purchases",
+      "Daily Subscriptions",
+      "Quick Services",
+      "Impulse Buys",
+      "Daily Deals",
+      "Tips",
+      "Small Gifts",
+      "Daily Services",
+      "Quick Repairs",
+      "Vending Machines",
+      "ATM Fees",
+      "Small Donations",
+      "Daily Subscriptions",
+      "Daily Parking",
+      "Toll Charges",
+      "Quick Snacks",
+      "Water Refills",
+      "Phone Credits",
+      "Quick Prints",
+      "Small Tools",
+      "Daily Maintenance",
+      "Quick Repairs",
+      "Daily Supplies",
+      "Small Electronics",
+      "Quick Services",
+    ],
     full: [
-      "Housing & Utilities", "Transportation", "Food & Dining", "Health & Medical", "Entertainment",
+      "Housing & Utilities",
+      "Transportation",
+      "Food & Dining",
+      "Health & Medical",
+      "Personal Care",
+      "Entertainment",
+      "Shopping",
+      "Education & Training",
+      "Business Services",
+      "Professional Fees",
+      "Insurance",
+      "Investments",
+      "Debt Payments",
+      "Charitable Giving",
+      "Travel & Vacation",
+      "Family Expenses",
+      "Pet Care",
+      "Hobbies & Recreation",
+      "Gifts & Donations",
+      "Emergency Fund",
+      "Savings Goals",
+      "Retirement Planning",
+      "Tax Payments",
+      "Legal Services",
+      "Financial Services",
+      "Vehicle Expenses",
+      "Home Improvement",
+      "Technology",
+      "Subscriptions",
+      "Membership Fees",
+      "Professional Development",
+      "Office Expenses",
+      "Marketing & Advertising",
+      "Equipment & Supplies",
+      "Maintenance & Repairs",
+      "Miscellaneous Expenses",
+      "Bank Charges",
+      "Credit Card Fees",
+      "Loan Payments",
+      "Investment Properties",
     ],
   };
 
   const getFilteredSuggestions = (): string[] => {
-    const currentCategories = expenseCategories[expenseTypeRaw.split(" ")[0]] || expenseCategories.full;
+    const currentCategories =
+      expenseCategories[expenseTypeRaw.split(" ")[0]] || expenseCategories.full;
     if (!categorySearch) return currentCategories;
 
     return currentCategories.filter((cat) =>
@@ -107,9 +363,13 @@ const ExpenseTracker = () => {
       const token = localStorage.getItem("token");
       const response = await axios.get(
         `${base}/api/expenses/${encodeURIComponent(expenseType)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-
+      
       if (response.data.success) {
         const formattedExpenses = response.data.expenses.map((expense: any) => ({
           _id: expense._id,
@@ -136,8 +396,8 @@ const ExpenseTracker = () => {
       return;
     }
 
-    if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      alert("Please enter a valid positive amount");
+    if (isNaN(parseFloat(amount))) {
+      alert("Please enter a valid amount");
       return;
     }
 
@@ -152,10 +412,20 @@ const ExpenseTracker = () => {
     };
 
     if (freshStart) {
-      setTemporaryExpenses([...temporaryExpenses, { ...newExpense, _id: Date.now().toString() }]);
-      resetForm();
+      setTemporaryExpenses([
+        ...temporaryExpenses,
+        { ...newExpense, _id: Date.now().toString() },
+      ]);
+      setAmount("");
+      setCategory("");
+      setDescription("");
+      setDate("");
+      setCategorySearch("");
       setSaveStatus("saved");
-      setTimeout(() => setSaveStatus(""), 2000);
+
+      setTimeout(() => {
+        setSaveStatus("");
+      }, 2000);
       return;
     }
 
@@ -163,36 +433,53 @@ const ExpenseTracker = () => {
       const token = localStorage.getItem("token");
       const response = await axios.post(
         `${base}/api/expenses`,
-        { expenses: [newExpense], username, userEmail, expenseType },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          expenses: [newExpense],
+          username,
+          userEmail,
+          expenseType,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (response.data.success) {
         await fetchExpenses();
-        resetForm();
+        setAmount("");
+        setCategory("");
+        setDescription("");
+        setDate("");
+        setCategorySearch("");
         setSaveStatus("saved");
-        setTimeout(() => setSaveStatus(""), 2000);
+
+        setTimeout(() => {
+          setSaveStatus("");
+        }, 2000);
+
         setShowPreviousExpenseCard(false);
         setShowExistingExpenses(true);
       }
     } catch (err: any) {
       console.error("Expense addition failed:", err.response?.data || err);
       setSaveStatus("error");
-      alert(err.response?.data?.message || "Failed to add expense. Please try again.");
-      setTimeout(() => setSaveStatus(""), 2000);
+      alert(
+        err.response?.data?.error || "Failed to add expense. Please try again."
+      );
+
+      setTimeout(() => {
+        setSaveStatus("");
+      }, 2000);
     }
   };
 
-  const resetForm = () => {
-    setAmount("");
-    setCategory("");
-    setDescription("");
-    setDate("");
-    setCategorySearch("");
-  };
-
   const getTotalExpense = () => {
-    return (freshStart ? temporaryExpenses : expenses).reduce((total, expense) => total + expense.amount, 0);
+    if (freshStart) {
+      return temporaryExpenses.reduce((total, expense) => total + expense.amount, 0);
+    }
+    return expenses.reduce((total, expense) => total + expense.amount, 0);
   };
 
   const handleDelete = async (expenseId: string) => {
@@ -211,7 +498,11 @@ const ExpenseTracker = () => {
       const token = localStorage.getItem("token");
       const response = await axios.delete(
         `${base}/api/expenses/${expenseId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (response.data.success) {
@@ -222,42 +513,89 @@ const ExpenseTracker = () => {
       }
     } catch (err: any) {
       console.error("Failed to delete expense:", err.response?.data || err);
-      alert(err.response?.data?.message || "Failed to delete expense. Please try again.");
+      alert(
+        err.response?.data?.message || "Failed to delete expense. Please try again."
+      );
     } finally {
       setDeleting(false);
     }
   };
 
-  const submitForAnalysis = async (expenseType: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
-
-      if (expensesToAnalyze.length === 0) {
-        alert("No expenses to analyze. Please add some expenses.");
-        return;
-      }
-
-      await axios.post(
-        `${base}/api/expenses/analyze`,
-        {
-          username,
-          userEmail,
-          expenseType,
-          expenses: expensesToAnalyze.map((expense) => ({
-            ...expense,
-            userEmail,
-            expenseType,
-          })),
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      navigate(`/analysis/${expenseType}`);
-    } catch (error) {
-      console.error("Error submitting data:", error);
-      alert("Failed to submit for analysis. Please try again.");
+const submitForAnalysis = async (expenseType: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in to continue");
+      navigate("/login");
+      return;
     }
-  };
+
+    const expensesToAnalyze = freshStart ? temporaryExpenses : expenses;
+    if (expensesToAnalyze.length === 0) {
+      alert("No expenses available to analyze");
+      return;
+    }
+
+    const formattedExpenseType = expenseType.toLowerCase().replace(/-/g, " ");
+    console.log("Submitting data:", {
+      username,
+      userEmail,
+      expenseType: formattedExpenseType,
+      expenses: expensesToAnalyze, // Log the full expenses array
+    });
+
+    // Validate expenses
+    const validExpenses = expensesToAnalyze.filter(
+      (expense) =>
+        expense.amount &&
+        typeof expense.amount === "number" &&
+        expense.amount > 0 &&
+        expense.category &&
+        expense.description &&
+        expense.date &&
+        /^\d{4}-\d{2}-\d{2}$/.test(expense.date) &&
+        expense.userEmail &&
+        expense.expenseType
+    );
+    if (validExpenses.length === 0) {
+      alert("No valid expenses to analyze");
+      return;
+    }
+
+    const response = await axios.post(
+      `${base}/api/expenses/analyze`,
+      {
+        username,
+        userEmail,
+        expenseType: formattedExpenseType,
+        expenses: validExpenses.map((expense) => ({
+          amount: expense.amount,
+          category: expense.category,
+          description: expense.description,
+          date: expense.date,
+          userEmail,
+          expenseType: formattedExpenseType,
+        })),
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log("Analysis response:", response.data);
+    navigate(`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`);
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || "Unknown error";
+    console.error("Error submitting data:", {
+      message: errorMessage,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    alert(`Failed to submit expenses for analysis: ${errorMessage}`);
+  }
+};
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -272,7 +610,10 @@ const ExpenseTracker = () => {
 
     return currentExpenses
       .filter((expense) => {
-        if (filterCategory && expense.category !== filterCategory) return false;
+        if (filterCategory && expense.category !== filterCategory) {
+          return false;
+        }
+
         if (searchText) {
           const searchLower = searchText.toLowerCase();
           return (
@@ -280,41 +621,81 @@ const ExpenseTracker = () => {
             expense.category.toLowerCase().includes(searchLower)
           );
         }
+
         return true;
       })
       .sort((a, b) => {
         switch (sortOrder) {
-          case "date-asc": return new Date(a.date).getTime() - new Date(b.date).getTime();
-          case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
-          case "amount-asc": return a.amount - b.amount;
-          case "amount-desc": return b.amount - a.amount;
-          default: return 0;
+          case "date-asc":
+            return new Date(a.date).getTime() - new Date(b.date).getTime();
+          case "date-desc":
+            return new Date(b.date).getTime() - new Date(b.date).getTime();
+          case "amount-asc":
+            return a.amount - b.amount;
+          case "amount-desc":
+            return b.amount - a.amount;
+          default:
+            return 0;
         }
       });
   };
 
   const getUniqueCategories = () => {
     const currentExpenses = freshStart ? temporaryExpenses : expenses;
-    return [...new Set(currentExpenses.map((expense) => expense.category))];
+    const categories = new Set<string>();
+    currentExpenses.forEach((expense) => categories.add(expense.category));
+    return Array.from(categories);
   };
 
   const filteredExpenses = getFilteredExpenses();
-  const summary = {
-    count: (freshStart ? temporaryExpenses : expenses).length,
-    totalAmount: getTotalExpense(),
-    mostFrequentCategory: [...new Set((freshStart ? temporaryExpenses : expenses).map((e) => e.category))]
-      .reduce((maxCat, cat) => {
-        const count = (freshStart ? temporaryExpenses : expenses).filter(e => e.category === cat).length;
-        return count > (maxCat.count || 0) ? { category: cat, count } : maxCat;
-      }, { category: "", count: 0 })?.category || "N/A",
-    dateRange: (() => {
-      const dates = (freshStart ? temporaryExpenses : expenses).map(e => new Date(e.date).getTime());
-      if (dates.length === 0) return "N/A";
-      const minDate = new Date(Math.min(...dates));
-      const maxDate = new Date(Math.max(...dates));
-      const diffDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 3600 * 24)) + 1;
-      return `${minDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} - ${maxDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} (${diffDays} days)`;
-    })(),
+
+  const calculateDaysBetween = (startDate: Date, endDate: Date) => {
+    const differenceInTime = endDate.getTime() - startDate.getTime();
+    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+    return differenceInDays + 1;
+  };
+
+  const getExpenseSummary = () => {
+    const currentExpenses = freshStart ? temporaryExpenses : expenses;
+    if (currentExpenses.length === 0) return {};
+
+    const totalAmount = currentExpenses.reduce((total, expense) => total + expense.amount, 0);
+
+    const categoryCount: Record<string, number> = {};
+    currentExpenses.forEach((expense) => {
+      categoryCount[expense.category] = (categoryCount[expense.category] || 0) + 1;
+    });
+
+    let mostFrequentCategory = "";
+    let maxCount = 0;
+    for (const category in categoryCount) {
+      if (categoryCount[category] > maxCount) {
+        maxCount = categoryCount[category];
+        mostFrequentCategory = category;
+      }
+    }
+
+    const dates = currentExpenses.map((expense) => new Date(expense.date).getTime());
+    const minDate = new Date(Math.min(...dates));
+    const maxDate = new Date(Math.max(...dates));
+
+    const totalDays = calculateDaysBetween(minDate, maxDate);
+
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    };
+
+    return {
+      count: currentExpenses.length,
+      totalAmount,
+      mostFrequentCategory,
+      dateRange: `${formatDate(minDate)} - ${formatDate(maxDate)} (${totalDays} days)`,
+      totalDays,
+    };
   };
 
   const exportToCSV = () => {
@@ -327,7 +708,12 @@ const ExpenseTracker = () => {
     const csvContent = [
       headers.join(","),
       ...filteredExpenses.map((expense) =>
-        [expense.date, `"${expense.category}"`, `"${expense.description}"`, expense.amount].join(",")
+        [
+          expense.date,
+          `"${expense.category}"`,
+          `"${expense.description}"`,
+          expense.amount,
+        ].join(",")
       ),
     ].join("\n");
 
@@ -349,6 +735,8 @@ const ExpenseTracker = () => {
     setTemporaryExpenses([]);
   };
 
+  const summary = getExpenseSummary();
+
   return (
     <div className="expense-container">
       <motion.nav
@@ -361,14 +749,16 @@ const ExpenseTracker = () => {
           <motion.h1
             className="title"
             whileHover={{ scale: 1.05 }}
-            style={{ display: "flex", alignItems: "center" }}
+            style={{ textTransform: "capitalize", display: "flex", alignItems: "center" }}
           >
-            {capitalizedExpenseType}
+            {capitalizedExpenseType} Expenses
           </motion.h1>
         </motion.div>
+
         <motion.div className="username-container" whileHover={{ scale: 1.05 }}>
           <span className="username">Welcome, {username}</span>
         </motion.div>
+
         <motion.button
           className="back-button"
           whileHover={{ scale: 1.05 }}
@@ -386,97 +776,102 @@ const ExpenseTracker = () => {
         <div className="loading-state" style={{ padding: "30px", textAlign: "center" }}>
           <LoadingCoin size="medium" text="Loading your expenses..." />
         </div>
-      ) : showPreviousExpenseCard && expenses.length > 0 && (
-        <motion.div
-          className="previous-expenses-card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{
-            background: "linear-gradient(135deg, #4f46e5, #6366f1)",
-            borderRadius: "16px",
-            padding: "30px",
-            color: "white",
-            margin: "20px auto",
-            maxWidth: "800px",
-            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h2 style={{ fontSize: "24px", marginBottom: "20px" }}>
-            Your Existing {capitalizedExpenseType}
-          </h2>
-          <div
+      ) : (
+        showPreviousExpenseCard &&
+        expenses.length > 0 && (
+          <motion.div
+            className="previous-expenses-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "20px",
+              background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+              borderRadius: "16px",
+              padding: "30px",
+              color: "white",
+              margin: "20px auto",
+              maxWidth: "800px",
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
             }}
           >
-            <div>
-              <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Total Expenses</h3>
-              <p style={{ fontSize: "24px", fontWeight: "bold" }}>{summary.count}</p>
-            </div>
-            <div>
-              <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Total Amount</h3>
-              <p style={{ fontSize: "24px", fontWeight: "bold" }}>
-                {formatCurrency(summary.totalAmount)}
-              </p>
-            </div>
-            <div>
-              <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Top Category</h3>
-              <p style={{ fontSize: "20px", fontWeight: "bold" }}>{summary.mostFrequentCategory}</p>
-            </div>
-            <div>
-              <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Time Period</h3>
-              <p style={{ fontSize: "16px", fontWeight: "bold" }}>{summary.dateRange}</p>
-            </div>
-          </div>
-          <div
-            style={{
-              marginTop: "30px",
-              display: "flex",
-              gap: "15px",
-              justifyContent: "center",
-            }}
-          >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setShowPreviousExpenseCard(false);
-                setShowExistingExpenses(true);
-                setFreshStart(false);
-              }}
+            <h2 style={{ fontSize: "24px", marginBottom: "20px" }}>
+              Your Existing {capitalizedExpenseType} Expenses
+            </h2>
+            <div
               style={{
-                background: "rgba(255,255,255,0.2)",
-                border: "1px solid rgba(255,255,255,0.4)",
-                borderRadius: "8px",
-                padding: "12px 24px",
-                color: "white",
-                fontWeight: "bold",
-                cursor: "pointer",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "20px",
               }}
             >
-              Continue with Existing Expenses
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleStartFresh}
+              <div>
+                <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Total Expenses</h3>
+                <p style={{ fontSize: "24px", fontWeight: "bold" }}>{summary.count}</p>
+              </div>
+              <div>
+                <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Total Amount</h3>
+                <p style={{ fontSize: "24px", fontWeight: "bold" }}>
+                  {formatCurrency(summary.totalAmount ?? 0)}
+                </p>
+              </div>
+              <div>
+                <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Top Category</h3>
+                <p style={{ fontSize: "20px", fontWeight: "bold" }}>
+                  {summary.mostFrequentCategory}
+                </p>
+              </div>
+              <div>
+                <h3 style={{ fontSize: "16px", opacity: 0.8 }}>Time Period</h3>
+                <p style={{ fontSize: "16px", fontWeight: "bold" }}>{summary.totalDays} days</p>
+              </div>
+            </div>
+            <div
               style={{
-                background: "white",
-                border: "none",
-                borderRadius: "8px",
-                padding: "12px 24px",
-                color: "#4f46e5",
-                fontWeight: "bold",
-                cursor: "pointer",
+                marginTop: "30px",
+                display: "flex",
+                gap: "15px",
+                justifyContent: "center",
               }}
             >
-              Start Fresh with New Expenses
-            </motion.button>
-          </div>
-        </motion.div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setShowPreviousExpenseCard(false);
+                  setShowExistingExpenses(true);
+                  setFreshStart(false);
+                }}
+                style={{
+                  background: "rgba(255,255,255,0.2)",
+                  border: "1px solid rgba(255,255,255,0.4)",
+                  borderRadius: "8px",
+                  padding: "12px 24px",
+                  color: "white",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Continue with Existing Expenses
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleStartFresh}
+                style={{
+                  background: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "12px 24px",
+                  color: "#4f46e5",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Start Fresh with New Expenses
+              </motion.button>
+            </div>
+          </motion.div>
+        )
       )}
 
       {!showPreviousExpenseCard && (
@@ -487,8 +882,10 @@ const ExpenseTracker = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h2>
-              {freshStart ? `Add New ${capitalizedExpenseType}` : `Add ${capitalizedExpenseType}`}
+            <h2 style={{ textTransform: "capitalize" }}>
+              {freshStart
+                ? "Add New " + capitalizedExpenseType + " Expense"
+                : "Add " + capitalizedExpenseType + " Expense"}
               {freshStart && (
                 <span
                   style={{
@@ -597,8 +994,10 @@ const ExpenseTracker = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h2>
-                {freshStart ? `New ${capitalizedExpenseType}` : `${capitalizedExpenseType} List`}
+              <h2 style={{ textTransform: "capitalize" }}>
+                {freshStart
+                  ? "New " + capitalizedExpenseType + " Expenses"
+                  : capitalizedExpenseType + " Expense List"}
               </h2>
 
               {filteredExpenses.length > 0 && (
@@ -692,9 +1091,8 @@ const ExpenseTracker = () => {
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               onClick={() => handleDelete(expense._id)}
-                              disabled={deleting}
                             >
-                              {deleting ? "Deleting..." : "Delete"}
+                              Delete
                             </motion.button>
                           </td>
                         </motion.tr>
@@ -709,8 +1107,8 @@ const ExpenseTracker = () => {
               )}
 
               <motion.div className="total-expense" whileHover={{ scale: 1.02 }}>
-                <h3>
-                  Total {capitalizedExpenseType}: {formatCurrency(getTotalExpense())}
+                <h3 style={{ textTransform: "capitalize" }}>
+                  Total {capitalizedExpenseType} Expenses: {formatCurrency(getTotalExpense())}
                 </h3>
               </motion.div>
 
@@ -737,7 +1135,7 @@ const ExpenseTracker = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <NavLink to={`/analysis/${expenseType.replace(/ /g, "-")}`}>
+          <NavLink to={`/analysis/${expenseType.toLowerCase().replace(/\s+/g, "-")}`}>
             <motion.button
               className="analysis-button"
               whileHover={{ scale: 1.05 }}
@@ -808,6 +1206,65 @@ const ExpenseTracker = () => {
           >
             Show Existing Expenses
           </motion.button>
+        </motion.div>
+      )}
+
+      {!showPreviousExpenseCard && (
+        <motion.div
+          className="chat-expense-option"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          style={{
+            margin: "30px auto",
+            padding: "20px",
+            maxWidth: "800px",
+            backgroundColor: "#f8fafc",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.05)",
+          }}
+        >
+          <h3 style={{ marginBottom: "15px", fontSize: "18px" }}>
+            Want to add expenses by chat?
+          </h3>
+          <p style={{ marginBottom: "20px", color: "#6b7280" }}>
+            Describe your expenses in natural language, and our AI will extract the details for you.
+          </p>
+          <NavLink to={`/chat`} style={{ textDecoration: "none" }}>
+            <motion.button
+              style={{
+                background: "linear-gradient(135deg, #4361ee, #00d4ff)",
+                border: "none",
+                borderRadius: "8px",
+                padding: "12px 24px",
+                color: "white",
+                fontWeight: "bold",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span>Try AI Chat Input</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </motion.button>
+          </NavLink>
         </motion.div>
       )}
 
