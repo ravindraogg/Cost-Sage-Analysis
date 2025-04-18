@@ -47,7 +47,6 @@ const AnalysisPage = () => {
   const [activeChart, setActiveChart] = useState<"bar" | "line" | "pie">("bar");
   const navigate = useNavigate();
 
-  // Handle undefined expenseType
   if (!expenseType) {
     return (
       <div className="analysis-container">
@@ -75,24 +74,20 @@ const AnalysisPage = () => {
         );
 
         console.log("API Response:", response.data);
-        if (response.data.success) {
-          setAnalysisData(response.data.analysis || []);
-          if ((response.data.analysis || []).length > 0) {
-            generateInsights(response.data.analysis);
+        if (response.data.success && Array.isArray(response.data.analysis)) {
+          setAnalysisData(response.data.analysis);
+          if (response.data.analysis.length > 0) {
+            await generateInsights(response.data.analysis);
           } else {
             setInsights(["No expense data available to generate insights."]);
             setInsightsLoading(false);
           }
         } else {
-          throw new Error(response.data.message || "Failed to fetch analysis data");
+          throw new Error(response.data.message || "Invalid analysis data");
         }
       } catch (err: any) {
         const errorMessage = err instanceof Error ? err.message : "Failed to fetch analysis data";
-        console.error("Fetch error:", {
-          message: errorMessage,
-          response: err.response?.data,
-          status: err.response?.status,
-        });
+        console.error("Fetch error:", err.response?.data || err);
         setError(errorMessage);
         setInsightsLoading(false);
       } finally {
@@ -189,20 +184,8 @@ const AnalysisPage = () => {
       {
         label: "Total Amount",
         data: analysisData.map((item) => item.totalAmount),
-        backgroundColor: [
-          "rgba(255, 99, 132, 0.6)",
-          "rgba(54, 162, 235, 0.6)",
-          "rgba(255, 206, 86, 0.6)",
-          "rgba(75, 192, 192, 0.6)",
-          "rgba(153, 102, 255, 0.6)",
-        ],
-        borderColor: [
-          "rgba(255, 99, 132, 1)",
-          "rgba(54, 162, 235, 1)",
-          "rgba(255, 206, 86, 1)",
-          "rgba(75, 192, 192, 1)",
-          "rgba(153, 102, 255, 1)",
-        ],
+        backgroundColor: generateColors(5).slice(0, analysisData.length),
+        borderColor: generateColors(5).slice(0, analysisData.length).map((c) => c.replace("0.6", "1")),
         borderWidth: 1,
       },
     ],
@@ -213,7 +196,12 @@ const AnalysisPage = () => {
     plugins: {
       title: {
         display: true,
-        text: `Expense Analysis for ${expenseType}`,
+        text: `Expense Analysis for ${expenseType?.replace(/-/g, " ") || "Unknown"}`,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
       },
     },
   };
@@ -232,7 +220,7 @@ const AnalysisPage = () => {
       </nav>
       <div className="analysis-container">
         <h1 style={{ textTransform: "capitalize" }}>
-          Expense Analysis: {expenseType.replace(/-/g, " ")}
+          Expense Analysis: {expenseType?.replace(/-/g, " ") || "Unknown"}
         </h1>
 
         {loading && (
