@@ -45,8 +45,10 @@ const ExpenseTracker = () => {
   const [freshStart, setFreshStart] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [analysisData, setAnalysisData] = useState<AnalysisData[]>([]); // Kept for state passing
-  const [insights, setInsights] = useState<string[]>([]); // Kept for state passing
+  // @ts-ignore
+  const [analysisData, setAnalysisData] = useState<AnalysisData[]>([]); // Used for navigation state
+  // @ts-ignore
+  const [insights, setInsights] = useState<string[]>([]); // Used for navigation state
 
   const expenseTypeRaw = location.pathname
     .split("/")
