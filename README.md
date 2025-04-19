@@ -1,8 +1,8 @@
 <div align="center">
   <img 
-    src="https://github.com/user-attachments/assets/a1493b84-e4e2-456e-a791-ce35ee2bcf2f" 
+    src="https://github.com/user-attachments/assets/aa5460fa-8872-4467-a233-b787cc5183d3"
     alt="Banner"
-    width="900"
+    width="200" height="200"
     style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); margin-bottom: 20px;"
   >
   <h1>💸 Cost-Sage-Analysis</h1>
@@ -38,13 +38,13 @@ Cost-Sage-Analysis aims to bridge the financial literacy gap in rural communitie
 ## 🧠 Team & Approach
 
 ### Team Name:  
-`FinTech Innovators`
+`Dumbledore’s Army`
 
 ### Team Members:  
-- Sarah Johnson (GitHub: @sarahjtech / LinkedIn: /sarahjohnson / Role: Full-Stack Developer)  
-- Miguel Rodriguez (GitHub: @miguelr-dev / Role: AI Engineer)  
-- Priya Patel (GitHub: @priyapatel / Role: UX Designer & Frontend Developer)
-- Raj Kumar (GitHub: @rajk-dev / Role: Backend Developer)
+- Ravindra S (GitHub: @ravindraogg / LinkedIn: /in.ravindra-dev/ / Role: Lead Dev)  
+- P Nitesh (GitHub: @PanithNitesh / LinkedIn: /in.nitesh-reddy-dev/ /Role: Full Stack)  
+- Mithun (GitHub: @Mithun / Role: Frontend Developer)
+- Masood (GitHub: @masood / Role: Backend Developer)
 
 ### Your Approach:  
 - **Why we chose this problem**: Rural commerce struggles with financial record-keeping and expense management, often leading to business failures. We wanted to create a solution that works even in low-connectivity environments and accommodates various literacy levels.
@@ -102,8 +102,8 @@ Cost-Sage-Analysis aims to bridge the financial literacy gap in rural communitie
 ---
 
 ## 📽️ Demo & Deliverables
-- **Demo Video Link:** [https://youtu.be/cost-sage-analysis-demo](https://youtu.be/cost-sage-analysis-demo)  
-- **Pitch Deck / PPT Link:** [https://docs.google.com/presentation/d/1abCdEfG123456](https://docs.google.com/presentation/d/1abCdEfG123456)  
+- **Demo Video Link:** [cost-sage-analysis-demo](https://youtu.be/DygaOrEhLG4)  
+- **Pitch Deck / PPT Link:** [drive.google.com](https://drive.google.com/drive/folders/1UZGx-blckY_BDL_WWlu0nc1b0gRRmDsm?usp=drive_link)  
 
 ---
 
