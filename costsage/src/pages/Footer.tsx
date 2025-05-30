@@ -17,7 +17,7 @@ const Footer = () => {
         <div className="footer-section">
           <h4>Quick Links</h4>
           <ul>
-          <li><a href="/about">About-Us</a></li>
+          <li><a href="/">About-Us</a></li>
             <li><a href="#features">Features</a></li>
             <li><a href="#faq">FAQ</a></li>
             <li><a href="#testimonials">Testimonials</a></li>
@@ -55,15 +55,6 @@ const Footer = () => {
       <div className="border-t">
         <div>
           <p>&copy; 2025 Cost-Sage. All rights reserved.</p>
-        </div>
-        <div className="flex">
-          {/* Add Thank You image and text here */}
-          <p>Special thanks to <a href="https://hackhazards.namespacecomm.in/" target="_blank" rel="noopener noreferrer">HACKHAZARDS</a> for providing us the platform to showcase our skills!</p>
-          <img 
-            src="https://hackhazards.namespacecomm.in/hack25purple.png" 
-            alt="HACKHAZARDS Logo" 
-            style={{ height: '30px', marginLeft: '10px' }} 
-          />
         </div>
       </div>
     </footer>
